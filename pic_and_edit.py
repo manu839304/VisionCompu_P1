@@ -20,6 +20,12 @@ def load_image(path_img):
     img = cv2.imread(path_img)
     return img
 
+# Funcion para calcular el histograma acumulativo de una imagen en escala de grises
+def calc_acum_hist(img):
+    hist = cv2.calcHist([img], [0], None, [256], [0, 256]).flatten()
+    acum_hist = np.cumsum(hist)
+    return hist, acum_hist
+
 # Muestra en una ventana la imagen, y por consola las propiedades de la matriz que almacena la imagen
 def show_image_and_properties(my_img):
     cv2.namedWindow('Imagen', cv2.WINDOW_AUTOSIZE)
@@ -33,11 +39,67 @@ def show_image_and_properties(my_img):
     cv2.destroyWindow('Imagen')
 
 # Contraste - Mejora del contraste de la imagen y ecualización de histograma
-def improve_contrast(img):
-    # Mostrar el histograma de la imagen
-    plt.hist(img.ravel(), 256, [0, 256])
-    plt.show()
+def improve_contrast(img, color=False):
+
+    # Si la imagen es en RGB
+    if color:
+        ...
     
+    # Si la imagen es en escala de grises
+    else:
+
+        # Cargamos la imagen en escala de grises
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        alto, ancho = img_gray.shape
+        print("Dimensiones de la imagen: ", alto, "x", ancho)
+        
+        # Obtenemos el histograma
+        num_pixels = ancho * alto
+        suma_pixels = 0
+        equalized_values = []
+        
+        hist, acum_hist = calc_acum_hist(img_gray)
+
+        # Calculamos la ecualización de histograma
+        for valor, frecuencia in enumerate(hist):
+            suma_pixels += frecuencia
+            equalized_value = round((suma_pixels * 255) / num_pixels)
+            equalized_values.append(equalized_value)
+
+        # Construimos la imagen ecualizada
+        for y in range(alto):
+            for x in range(ancho):
+                value = img_gray[y, x]
+                img_gray[y, x] = equalized_values[value]
+
+        hist2, acum_hist2 = calc_acum_hist(img_gray)
+
+        # Mostrar ambas imágenes y los histogramas acumulativos
+        plt.figure(figsize=(12, 6))
+
+        plt.subplot(2, 2, 1)
+        plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), cmap='gray')
+        plt.title('Imagen Original')
+        plt.axis('off')
+
+        plt.subplot(2, 2, 2)
+        plt.imshow(img_gray, cmap='gray')
+        plt.title('Imagen Ecualizada')
+        plt.axis('off')
+
+        plt.subplot(2, 2, 3)
+        plt.plot(acum_hist, color='gray')
+        plt.title('Histograma Acumulativo Original')
+        plt.xlim([0, 256])
+
+        plt.subplot(2, 2, 4)
+        plt.plot(acum_hist2, color='gray')
+        plt.title('Histograma Acumulativo Ecualizado')
+        plt.xlim([0, 256])
+
+        plt.tight_layout()
+        plt.show()
+
 
 # Alien - Cambiar el color de la piel a color rojo, verde o azul
 def change_skin(img):
@@ -87,8 +149,6 @@ def select_menu():
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '4':
             if img_taken:
-                alpha = float(input("Ingrese el valor de alpha: "))
-                beta = int(input("Ingrese el valor de beta: "))
                 img = improve_contrast(img)
             else:
                 print("\n## Primero debe tomar una imagen ##\n")
