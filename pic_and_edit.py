@@ -1,6 +1,8 @@
 import cv2 
 import numpy as np 
-from matplotlib import pyplot as plt 
+from matplotlib import pyplot as plt
+from matplotlib.pyplot import imshow
+
 
 # Funcion para tomar una imagen de la webcam 
 def take_picture():
@@ -38,6 +40,34 @@ def show_image_and_properties(my_img):
     cv2.waitKey(0)
     cv2.destroyWindow('Imagen')
 
+
+def mostrar_imagenes_histogramas(img_orig, img_eq, hist_orig, hist_eq):
+    # Mostrar ambas imágenes y los histogramas acumulativos
+    plt.figure(figsize=(12, 6))
+
+    plt.subplot(2, 2, 1)
+    plt.imshow(cv2.cvtColor(img_orig, cv2.COLOR_BGR2RGB))
+    plt.title('Imagen Original')
+    plt.axis('off')
+
+    plt.subplot(2, 2, 2)
+    plt.imshow(cv2.cvtColor(img_eq, cv2.COLOR_BGR2RGB))
+    plt.title('Imagen Ecualizada')
+    plt.axis('off')
+
+    plt.subplot(2, 2, 3)
+    plt.plot(hist_orig, color='gray')
+    plt.title('Histograma Acumulativo Original')
+    plt.xlim([0, 256])
+
+    plt.subplot(2, 2, 4)
+    plt.plot(hist_eq, color='gray')
+    plt.title('Histograma Acumulativo Ecualizado')
+    plt.xlim([0, 256])
+
+    plt.tight_layout()
+    plt.show()
+
 # Contraste - Mejora del contraste de la imagen y ecualización de histograma
 def improve_contrast_acum(img, color=False):
 
@@ -74,31 +104,8 @@ def improve_contrast_acum(img, color=False):
 
         hist2, acum_hist2 = calc_acum_hist(v)
 
-        # Mostrar ambas imágenes y los histogramas acumulativos
-        plt.figure(figsize=(12, 6))
+        mostrar_imagenes_histogramas(img, img_eq, acum_hist, acum_hist2)
 
-        plt.subplot(2, 2, 1)
-        plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-        plt.title('Imagen Original')
-        plt.axis('off')
-
-        plt.subplot(2, 2, 2)
-        plt.imshow(cv2.cvtColor(img_eq, cv2.COLOR_BGR2RGB))
-        plt.title('Imagen Ecualizada')
-        plt.axis('off')
-
-        plt.subplot(2, 2, 3)
-        plt.plot(acum_hist, color='gray')
-        plt.title('Histograma Acumulativo Original')
-        plt.xlim([0, 256])
-
-        plt.subplot(2, 2, 4)
-        plt.plot(acum_hist2, color='gray')
-        plt.title('Histograma Acumulativo Ecualizado')
-        plt.xlim([0, 256])
-
-        plt.tight_layout()
-        plt.show()
 
     
     # Si la imagen es en escala de grises
@@ -130,31 +137,7 @@ def improve_contrast_acum(img, color=False):
 
         hist2, acum_hist2 = calc_acum_hist(img_gray)
 
-        # Mostrar ambas imágenes y los histogramas acumulativos
-        plt.figure(figsize=(12, 6))
-
-        plt.subplot(2, 2, 1)
-        plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), cmap='gray')
-        plt.title('Imagen Original')
-        plt.axis('off')
-
-        plt.subplot(2, 2, 2)
-        plt.imshow(img_gray, cmap='gray')
-        plt.title('Imagen Ecualizada')
-        plt.axis('off')
-
-        plt.subplot(2, 2, 3)
-        plt.plot(acum_hist, color='gray')
-        plt.title('Histograma Acumulativo Original')
-        plt.xlim([0, 256])
-
-        plt.subplot(2, 2, 4)
-        plt.plot(acum_hist2, color='gray')
-        plt.title('Histograma Acumulativo Ecualizado')
-        plt.xlim([0, 256])
-
-        plt.tight_layout()
-        plt.show()
+        mostrar_imagenes_histogramas(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), img_gray, acum_hist, acum_hist2)
 
 
 # Contraste - Mejora del contraste de la imagen y ecualización de histograma
@@ -163,12 +146,44 @@ def improve_contrast_linear(img, gain, bias, color=False):
     
 
 # Alien - Cambiar el color de la piel a color rojo, verde o azul
-def change_skin(img, factor=1.0):
+def change_skin(img, color, factor=1.0):
 
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     alto, ancho, _ = img_hsv.shape
     print("Dimensiones de la imagen: ", alto, "x", ancho)
     h, s, v = cv2.split(img_hsv)
+
+    # Recorremos la imagen y pintamos el color piel
+    for y in range(alto):
+        for x in range(ancho):
+            hue = h[y, x]
+            sat = s[y, x]
+            if (hue <= 15 or hue >= 240)  and sat >= 40 and sat <= 250:
+                if color == 'r' or color == 'R':
+                    h[y,x] = 0
+                elif color == 'g' or color == 'G':
+                    h[y,x] = 55
+                elif color == 'b' or color == 'B':
+                    h[y,x] = 100
+                else:
+                    return img
+
+                if s[y,x] <= 155:
+                    s[y,x] += 100
+                else:
+                    s[y,x] = 255
+
+
+    img_hsv = cv2.merge((h, s, v))
+    img_pintada = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR)
+
+    cv2.imshow('pintada', img_pintada)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    return img_pintada
+
+
             
 
 
@@ -183,9 +198,9 @@ def add_distortion(img):
 # Menu de opciones
 def select_menu():
     
-    img_taken = False
+    img_taken = True
     end = False
-    img = None
+    img = cv2.imread("imgs/img4.jpg", cv2.IMREAD_COLOR)
 
     while not end:
         print("----------------------------------------------------")
@@ -224,6 +239,9 @@ def select_menu():
                     else:
                         img = improve_contrast_acum(img)
                 else:
+                    gain = input("Introduzca el contraste (gain): ")
+                    bias = input("Introduzca el brillo (bias): ")
+
                     if color == 's' or color == 'S':
                         img = improve_contrast_linear(img, gain, bias, color=True)
                     else:
@@ -232,8 +250,8 @@ def select_menu():
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '5':
             if img_taken:
-                color = input("Ingrese el color (rojo, verde o azul): ")
-                img = change_skin(img)
+                color = input("Ingrese el color (r/g/b): ")
+                img = change_skin(img, color)
             else:
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '6':
