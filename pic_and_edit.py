@@ -1,6 +1,7 @@
 import cv2 
 import numpy as np 
 from matplotlib import pyplot as plt
+from sklearn.cluster import MiniBatchKMeans
 from matplotlib.pyplot import imshow
 
 
@@ -67,6 +68,7 @@ def mostrar_imagenes_histogramas(img_orig, img_eq, hist_orig, hist_eq):
 
     plt.tight_layout()
     plt.show()
+
 
 # Contraste - Mejora del contraste de la imagen y ecualización de histograma
 def improve_contrast_acum(img, color=False):
@@ -188,19 +190,84 @@ def change_skin(img, color, factor=1.0):
 
 
 # Póster - Reducir el número de colores presente en la imagen
-def reduce_colors(img):
-    ...
+def reduce_colors(img, kmeans, n_colors):
+    if kmeans:
+        # Algoritmo basado en https://pyimagesearch.com/2014/07/07/color-quantization-opencv-using-k-means-clustering/
+        (h, w) = img.shape[:2]
+
+        # Pasamos la imagen a LAB porque los colores se perciben de forma más uniforme
+        lab_image = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        lab_image = lab_image.reshape((h * w, 3))
+
+        # Organizamos los colores en <n_colores> clusters
+        clt = MiniBatchKMeans(n_clusters=n_colors)
+        labels = clt.fit_predict(lab_image)
+
+        # Obtiene los colores promedio de cada cluster y lo aplica a todos los colores del cluster
+        cluster_centers = clt.cluster_centers_.astype("uint8")[labels]
+
+
+        cluster_centers = cluster_centers.reshape((h, w, 3))
+        posterized = cv2.cvtColor(cluster_centers, cv2.COLOR_LAB2BGR)
+
+        cv2.imshow("posterized", posterized)
+        cv2.waitKey(0)
+
+        return posterized
+
+    else:
+        # Agrupamos los valores R, G y B en <n_colors> grupos
+        # y cambiamos todos los valores de un grupo al valor más bajo del mismo
+        factor = 255 // n_colors
+        posterized = (img // factor) * factor
+
+        cv2.imshow('posterized', posterized)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        return posterized
+
+def distorsion_function(x, y, cx, cy, k1, k2):
+    x_n = (x - cx) / cx
+    y_n = (y - cy) / cy
+
+    r_2 = x**2 + y**2
+    r_4 = r_2 * r_2
+
+    x_p = x_n * (1 + k1 * r_2 + k2 * r_4)
+    y_p = y_n * (1 + k1 * r_2 + k2 * r_4)
+
+    new_x = int(cx + x_p * cx)
+    new_y = int(cy + y_p * cy)
+
+    return new_x, new_y
 
 # Distorsión - Añadir distorsión de barril y de cojín ajustables
-def add_distortion(img):
-    ...
+def add_distortion(img, k1, k2):
+    alto, ancho, c = img.shape  # Dimensiones de la imagen
+    cx, cy = ancho // 2, alto // 2  # Centro de la imagen
+    distorted_img = np.zeros_like(img)
+
+    for y in range(alto):
+        for x in range(ancho):
+            x_p, y_p = distorsion_function(x, y, cx, cy, k1, k2)  # Aplicar transformación
+
+            # Verificar que los nuevos valores están dentro de los límites
+            if 0 <= x_p < ancho and 0 <= y_p < alto:
+                distorted_img[y_p, x_p] = img[y, x]  # Mover píxel a nueva posición
+
+    cv2.imshow('distorted', distorted_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    return distorted_img
 
 # Menu de opciones
 def select_menu():
     
     img_taken = True
     end = False
-    img = cv2.imread("imgs/img4.jpg", cv2.IMREAD_COLOR)
+    img = cv2.imread("imgs/img3.jpg", cv2.IMREAD_COLOR)
 
     while not end:
         print("----------------------------------------------------")
@@ -256,15 +323,23 @@ def select_menu():
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '6':
             if img_taken:
-                n_colors = int(input("Ingrese el número de colores: "))
-                img = reduce_colors(img)
+                kmeans = input("¿Desea usar clustering k-means? (s/n): ")
+                n_colors = 0
+                if kmeans == 's' or kmeans == 'S':
+                    n_colors = int(input("Ingrese el número de colores:"))
+                    kmeans = True
+                else:
+                    n_colors = int(input("Ingrese el nivel de posterizado:"))
+                    kmeans = False
+
+                img = reduce_colors(img, kmeans, n_colors)
             else:
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '7':
             if img_taken:
                 k1 = float(input("Ingrese el valor de k1: "))
                 k2 = float(input("Ingrese el valor de k2: "))
-                img = add_distortion(img)
+                img = add_distortion(img, k1, k2)
             else:
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '8':
