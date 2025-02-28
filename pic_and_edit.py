@@ -228,15 +228,19 @@ def reduce_colors(img, kmeans, n_colors):
         return posterized
 
 def distorsion_function(x, y, cx, cy, k1, k2):
+
+    # Centramos las coordenadas y las normalizamos
     x_n = (x - cx) / cx
     y_n = (y - cy) / cy
 
-    r_2 = x**2 + y**2
-    r_4 = r_2 * r_2
+    # Calculamos la distancia radial normalizada desde el centro
+    r = np.sqrt(x_n**2 + y_n**2)
 
-    x_p = x_n * (1 + k1 * r_2 + k2 * r_4)
-    y_p = y_n * (1 + k1 * r_2 + k2 * r_4)
+    # Aplicamos el modelo de distorsión radial de Brown-Conrady
+    x_p = x_n * (1 + k1 * r**2 + k2 * r**4)
+    y_p = y_n * (1 + k1 * r**2 + k2 * r**4)
 
+    # Convertimos los valores transformados al sistema de la imagen original
     new_x = int(cx + x_p * cx)
     new_y = int(cy + y_p * cy)
 
@@ -244,17 +248,18 @@ def distorsion_function(x, y, cx, cy, k1, k2):
 
 # Distorsión - Añadir distorsión de barril y de cojín ajustables
 def add_distortion(img, k1, k2):
-    alto, ancho, c = img.shape  # Dimensiones de la imagen
+    alto, ancho, c = img.shape
     cx, cy = ancho // 2, alto // 2  # Centro de la imagen
     distorted_img = np.zeros_like(img)
 
     for y in range(alto):
         for x in range(ancho):
-            x_p, y_p = distorsion_function(x, y, cx, cy, k1, k2)  # Aplicar transformación
+            # Calculamos la posición original de cada píxel en la imagen distorsionada
+            x_p, y_p = distorsion_function(x, y, cx, cy, k1, k2)
 
-            # Verificar que los nuevos valores están dentro de los límites
             if 0 <= x_p < ancho and 0 <= y_p < alto:
-                distorted_img[y_p, x_p] = img[y, x]  # Mover píxel a nueva posición
+                # Aplicamos el pixel calculado original en el pixel distorsionado
+                distorted_img[x, y] = img[y_p, x_p]
 
     cv2.imshow('distorted', distorted_img)
     cv2.waitKey(0)
@@ -267,7 +272,7 @@ def select_menu():
     
     img_taken = True
     end = False
-    img = cv2.imread("imgs/img3.jpg", cv2.IMREAD_COLOR)
+    img = cv2.imread("imgs/img5.jpg", cv2.IMREAD_COLOR)
 
     while not end:
         print("----------------------------------------------------")
