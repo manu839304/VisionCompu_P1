@@ -356,9 +356,9 @@ def add_distortion(img, k1, k2):
 # Menu de opciones
 def select_menu():
     
-    img_taken = True
+    img_taken = False
+    img = None
     end = False
-    img = cv2.imread("imgs/img5.jpg", cv2.IMREAD_COLOR)
 
     while not end:
         print("----------------------------------------------------")
@@ -381,7 +381,7 @@ def select_menu():
             img_taken = True
         elif option == '2':
             path_img = input("Ingrese la ruta de la imagen: ")
-            img = load_image("imgs/img2.jpg")
+            img = load_image(path_img)
             img_taken = True
         elif option == '3':
             if img_taken:
