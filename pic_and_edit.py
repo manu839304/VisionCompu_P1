@@ -212,6 +212,40 @@ def pixel_art(img, pixel_size=10):
     cv2.imshow('Pixel Art', pixelated_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+import random
+import numpy as np
+
+def glitch(img, intensity=10, color_shift=True):
+    height, width, channels = img.shape
+    glitched_img = img.copy()
+
+    for i in range(intensity):
+        y = random.randint(0, height - 1)
+        # desplazamiento aleatorio en el rango de -20 a 20
+        shift = random.randint(-20, 20)
+        
+        # desplazamiento en la fila seleccionada (en el eje horizontal)
+        glitched_img[y] = np.roll(img[y], shift, axis=0)
+
+        # efecto de cambio de color
+        if color_shift:
+            for c in range(3):
+                if random.random() > 0.7:
+                    # desplazamento del canal horizontalmente
+                    shift_channel = random.randint(-5, 5)
+                    glitched_img[:, :, c] = np.roll(glitched_img[:, :, c], shift_channel, axis=1)
+
+        #  ruido aleatorio 
+        if random.random() > 0.8:
+            # coordenada aleatoria en el eje x
+            x = random.randint(0, width - 1)
+            glitched_img[y, x] = [random.randint(0, 255) for _ in range(3)]
+
+    cv2.imshow('glitch', glitched_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
             
 # Póster - Reducir el número de colores presente en la imagen
 def reduce_colors(img, kmeans, n_colors):
@@ -377,6 +411,7 @@ def select_menu():
                 print("----------------------------------------------------")
                 print("(1) Camara Termica")
                 print("(2) Pixel Art")
+                print("(3) Glitch")
                 print("----------------------------------------------------")
                 sub_option = input("Seleccione una opción: ")
 
@@ -385,6 +420,14 @@ def select_menu():
                 elif sub_option == '2':
                     num_pixels = int(input("Ingrese el tamaño de los pixeles: "))
                     pixel_art(img, num_pixels)
+                elif sub_option == '3':
+                    intensity = int(input("Ingrese la intensidad del efecto: "))
+                    color_shift = input("¿Desea aplicar cambio de color? (s/n): ")
+                    if color_shift == 's' or color_shift == 'S':
+                        color_shift = True
+                    else:
+                        color_shift = False
+                    glitch(img, intensity, color_shift)
                 else:
                     print("Opción no válida")
             else:
