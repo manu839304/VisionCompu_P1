@@ -185,10 +185,34 @@ def change_skin(img, color, factor=1.0):
 
     return img_pintada
 
+def camara_termica(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  
+    thermal = cv2.applyColorMap(gray, cv2.COLORMAP_JET) 
+    cv2.imshow('thermal', thermal)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
+def pixel_art(img, pixel_size=10):
+
+    height, width = img.shape[:2]
+    
+    # imagen en blanco con las mismas dimensiones
+    pixelated_img = np.zeros_like(img)
+
+    for y in range(0, height, pixel_size):
+        for x in range(0, width, pixel_size):
+            # bloque de la imagen original
+            block = img[y:y+pixel_size, x:x+pixel_size]
             
+            avg_color = np.mean(block, axis=(0, 1))  
+            
+            # bloque en la nueva imagen con el color promedio
+            pixelated_img[y:y+pixel_size, x:x+pixel_size] = avg_color
 
-
+    cv2.imshow('Pixel Art', pixelated_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+            
 # Póster - Reducir el número de colores presente en la imagen
 def reduce_colors(img, kmeans, n_colors):
     if kmeans:
@@ -285,7 +309,8 @@ def select_menu():
         print("(5) Cambiar el color de la piel")
         print("(6) Reducir el número de colores")
         print("(7) Añadir distorsión")
-        print("(8) Salir")
+        print("(8) Efectos adicionales")
+        print("(9) Salir")
         print("----------------------------------------------------")
         option = input("Seleccione una opción: ")
 
@@ -348,6 +373,23 @@ def select_menu():
             else:
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '8':
+            if img_taken:
+                print("----------------------------------------------------")
+                print("(1) Camara Termica")
+                print("(2) Pixel Art")
+                print("----------------------------------------------------")
+                sub_option = input("Seleccione una opción: ")
+
+                if sub_option == '1':
+                    camara_termica(img)
+                elif sub_option == '2':
+                    num_pixels = int(input("Ingrese el tamaño de los pixeles: "))
+                    pixel_art(img, num_pixels)
+                else:
+                    print("Opción no válida")
+            else:
+                print("\n## Primero debe tomar una imagen ##\n")        
+        elif option == '9':
             end = True
         else:
             print("Opción no válida")
