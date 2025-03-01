@@ -4,6 +4,8 @@ from matplotlib import pyplot as plt
 from sklearn.cluster import MiniBatchKMeans
 from matplotlib.pyplot import imshow
 
+_red = (0, 0, 255)
+_cyan = (255, 255, 0)
 
 # Funcion para tomar una imagen de la webcam 
 def take_picture():
@@ -234,7 +236,7 @@ def glitch(img, intensity=10, color_shift=True):
                 if random.random() > 0.7:
                     # desplazamento del canal horizontalmente
                     shift_channel = random.randint(-5, 5)
-                    glitched_img[:, :, c] = np.roll(glitched_img[:, :, c], shift_channel, axis=1)
+                    glitched_img[:, :, c] = np.roll(glitched_img[:, :, c], shift_channel, axis=1) 
 
         #  ruido aleatorio 
         if random.random() > 0.8:
@@ -246,7 +248,33 @@ def glitch(img, intensity=10, color_shift=True):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-            
+
+def anaglifo(img, shifts=[(-5, 0), (5, 0)], colors=[_red, _cyan]):
+
+    height, width, _ = img.shape
+    anaglyph_img = np.zeros_like(img, dtype=np.uint8)
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # cada color con su desplazamiento
+    for (dx, dy), color in zip(shifts, colors):
+        # opia de la imagen en escala de grises
+        shifted_img = np.zeros_like(img, dtype=np.uint8)
+
+        M = np.float32([[1, 0, dx], [0, 1, dy]]) # M es la matriz de transformación (traslación)
+        shifted_gray = cv2.warpAffine(gray, M, (width, height)) # traslación de la imagen en escala de grises
+        
+        for c, value in enumerate(color):
+            # multiplicación de la imagen en escala de grises por el color
+            shifted_img[:, :, c] = (shifted_gray * (value / 255)).astype(np.uint8)
+
+        # combinacion de los colores en la imagen final
+        anaglyph_img = cv2.add(anaglyph_img, shifted_img)
+    
+    cv2.imshow('anaglyph', anaglyph_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
 # Póster - Reducir el número de colores presente en la imagen
 def reduce_colors(img, kmeans, n_colors):
     if kmeans:
@@ -412,6 +440,7 @@ def select_menu():
                 print("(1) Camara Termica")
                 print("(2) Pixel Art")
                 print("(3) Glitch")
+                print("(4) Anaglifo")
                 print("----------------------------------------------------")
                 sub_option = input("Seleccione una opción: ")
 
@@ -428,6 +457,19 @@ def select_menu():
                     else:
                         color_shift = False
                     glitch(img, intensity, color_shift)
+                elif sub_option == '4':
+                    shifts_x1_y1 = input("Ingrese el desplazamiento para el primer color (x, y): ")
+                    shifts_x2_y2 = input("Ingrese el desplazamiento para el segundo color (x, y): ")
+                    # Si detectamos que no tiene valores, asignamos unos por defecto
+                    if not shifts_x1_y1 or not shifts_x2_y2:
+                        shifts_x1_y1 = "-10,0"
+                        shifts_x2_y2 = "10,0"
+                    shifts = [(int(shifts_x1_y1.split(',')[0]),
+                               int(shifts_x1_y1.split(',')[1])), 
+                              (int(shifts_x2_y2.split(',')[0]), 
+                               int(shifts_x2_y2.split(',')[1]))]
+                    colors = [_red, _cyan] 
+                    anaglifo(img, shifts, colors)
                 else:
                     print("Opción no válida")
             else:
