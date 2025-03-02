@@ -144,10 +144,45 @@ def improve_contrast_acum(img, color=False):
         mostrar_imagenes_histogramas(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), img_gray, acum_hist, acum_hist2)
 
 
-# Contraste - Mejora del contraste de la imagen y ecualización de histograma
+# Contraste - Mejora del contraste de la imagen y ecualización de histograma (lineal)
 def improve_contrast_linear(img, gain, bias, color=False):
-    ...
     
+    # Si la imagen es en RGB
+    if color:
+        
+        # Convertimos la imagen a HSV
+        img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        alto, ancho, _ = img_hsv.shape
+        print("Dimensiones de la imagen: ", alto, "x", ancho)
+
+        h, s, v = cv2.split(img_hsv)
+
+        # Aplicamos la mejora de contraste
+        v = np.clip((v * float(gain)) + float(bias), 0, 255) 
+        
+        img_hsv = cv2.merge((h, s, v))
+        img_eq = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR)
+
+        cv2.imshow('ecualizada_lineal_color', img_eq)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+
+    # Si la imagen es en escala de grises
+    else:
+
+        # Cargamos la imagen en escala de grises
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        alto, ancho = img_gray.shape
+        print("Dimensiones de la imagen: ", alto, "x", ancho)
+
+        # Aplicamos la mejora de contraste
+        img_gray = np.clip((img_gray * float(gain)) + float(bias), 0, 255)
+
+        cv2.imshow('ecualizada_lineal_grayscale', img_gray)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
 
 # Alien - Cambiar el color de la piel a color rojo, verde o azul
 def change_skin(img, color, factor=1.0):
@@ -233,7 +268,7 @@ def glitch(img, intensity=10, color_shift=True):
         # efecto de cambio de color
         if color_shift:
             for c in range(3):
-                if random.random() > 0.7:
+                if random.random() > 0.7:   
                     # desplazamento del canal horizontalmente
                     shift_channel = random.randint(-5, 5)
                     glitched_img[:, :, c] = np.roll(glitched_img[:, :, c], shift_channel, axis=1) 
