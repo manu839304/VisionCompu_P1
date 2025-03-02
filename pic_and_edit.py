@@ -147,7 +147,6 @@ def improve_contrast_acum(img, color=False):
         cv2.imwrite('4_contrast.jpg', img_gray)
 
 
-# Contraste - Mejora del contraste de la imagen y ecualización de histograma (lineal)
 def improve_contrast_linear(img, gain, bias, color=False):
     
     # Si la imagen es en RGB
@@ -159,17 +158,19 @@ def improve_contrast_linear(img, gain, bias, color=False):
         print("Dimensiones de la imagen: ", alto, "x", ancho)
 
         h, s, v = cv2.split(img_hsv)
+        hist, acum_hist = calc_acum_hist(v)
 
-        # Aplicamos la mejora de contraste
-        v = np.clip((v * float(gain)) + float(bias), 0, 255) 
+        # Aplicamos la mejora de contraste de forma lineal
+        v = np.round(v.astype(np.float32) * gain + bias)  
+        v = np.clip(v, 0, 255).astype(np.uint8) 
         
         img_hsv = cv2.merge((h, s, v))
         img_eq = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR)
 
-        cv2.imshow('ecualizada_lineal_color', img_eq)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        hist2, acum_hist2 = calc_acum_hist(v)
+        mostrar_imagenes_histogramas(img, img_eq, acum_hist, acum_hist2)
 
+        cv2.imwrite('4_contrast_linear.jpg', img_eq)
 
     # Si la imagen es en escala de grises
     else:
@@ -179,13 +180,16 @@ def improve_contrast_linear(img, gain, bias, color=False):
         alto, ancho = img_gray.shape
         print("Dimensiones de la imagen: ", alto, "x", ancho)
 
-        # Aplicamos la mejora de contraste
-        img_gray = np.clip((img_gray * float(gain)) + float(bias), 0, 255)
+        hist, acum_hist = calc_acum_hist(img_gray)
 
-        cv2.imshow('ecualizada_lineal_grayscale', img_gray)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # Aplicamos la mejora de contraste de forma lineal
+        img_gray = np.round(img_gray.astype(np.float32) * gain + bias)  
+        img_gray = np.clip(img_gray, 0, 255).astype(np.uint8)  
 
+        hist2, acum_hist2 = calc_acum_hist(img_gray)
+        mostrar_imagenes_histogramas(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), img_gray, acum_hist, acum_hist2)
+
+        cv2.imwrite('4_contrast_linear.jpg', img_gray)
 
 # Alien - Cambiar el color de la piel a color rojo, verde o azul
 def change_skin(img, color, factor=1.0):
@@ -255,7 +259,6 @@ def pixel_art(img, pixel_size=10):
 
     cv2.imwrite('9_2_pixelated.jpg', pixelated_img)
 
-
 def glitch(img, intensity=10, color_shift=True):
     height, width, channels = img.shape
     glitched_img = img.copy()
@@ -288,7 +291,6 @@ def glitch(img, intensity=10, color_shift=True):
 
     cv2.imwrite('9_3_glitch.jpg', glitched_img)
 
-
 def anaglifo(img, shifts=[(-5, 0), (5, 0)], colors=[_red, _cyan]):
 
     height, width, _ = img.shape
@@ -316,7 +318,6 @@ def anaglifo(img, shifts=[(-5, 0), (5, 0)], colors=[_red, _cyan]):
     cv2.destroyAllWindows()
 
     cv2.imwrite('9_4_anaglyph.jpg', anaglyph_img)
-
 
 # Póster - Reducir el número de colores presente en la imagen
 def reduce_colors(img, kmeans, n_colors):
@@ -356,7 +357,6 @@ def reduce_colors(img, kmeans, n_colors):
         cv2.destroyAllWindows()
 
         cv2.imwrite('3_posterized.jpg', posterized)
-
 
 def distorsion_function(x, y, cx, cy, k1, k2):
 
@@ -443,8 +443,8 @@ def select_menu():
                     else:
                         improve_contrast_acum(img)
                 else:
-                    gain = input("Introduzca el contraste (gain): ")
-                    bias = input("Introduzca el brillo (bias): ")
+                    gain = float(input("Introduzca el contraste (gain): "))
+                    bias = float(input("Introduzca el brillo (bias): "))
 
                     if color == 's' or color == 'S':
                         improve_contrast_linear(img, gain, bias, color=True)
