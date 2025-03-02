@@ -2,7 +2,7 @@ import cv2
 import numpy as np 
 from matplotlib import pyplot as plt
 from sklearn.cluster import MiniBatchKMeans
-from matplotlib.pyplot import imshow
+import random
 
 _red = (0, 0, 255)
 _cyan = (255, 255, 0)
@@ -110,6 +110,7 @@ def improve_contrast_acum(img, color=False):
 
         mostrar_imagenes_histogramas(img, img_eq, acum_hist, acum_hist2)
 
+        cv2.imwrite('4_contrast.jpg', img_eq)
 
     
     # Si la imagen es en escala de grises
@@ -142,6 +143,8 @@ def improve_contrast_acum(img, color=False):
         hist2, acum_hist2 = calc_acum_hist(img_gray)
 
         mostrar_imagenes_histogramas(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), img_gray, acum_hist, acum_hist2)
+
+        cv2.imwrite('4_contrast.jpg', img_gray)
 
 
 # Contraste - Mejora del contraste de la imagen y ecualización de histograma (lineal)
@@ -205,7 +208,7 @@ def change_skin(img, color, factor=1.0):
                 elif color == 'b' or color == 'B':
                     h[y,x] = 100
                 else:
-                    return img
+                    return
 
                 if s[y,x] <= 155:
                     s[y,x] += 100
@@ -219,8 +222,7 @@ def change_skin(img, color, factor=1.0):
     cv2.imshow('pintada', img_pintada)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-    return img_pintada
+    cv2.imwrite('5_piel.jpg', img_pintada)
 
 def camara_termica(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  
@@ -228,6 +230,7 @@ def camara_termica(img):
     cv2.imshow('thermal', thermal)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    cv2.imwrite('9_1_termica.jpg', thermal)
 
 def pixel_art(img, pixel_size=10):
 
@@ -250,8 +253,8 @@ def pixel_art(img, pixel_size=10):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-import random
-import numpy as np
+    cv2.imwrite('9_2_pixelated.jpg', pixelated_img)
+
 
 def glitch(img, intensity=10, color_shift=True):
     height, width, channels = img.shape
@@ -283,6 +286,8 @@ def glitch(img, intensity=10, color_shift=True):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+    cv2.imwrite('9_3_glitch.jpg', glitched_img)
+
 
 def anaglifo(img, shifts=[(-5, 0), (5, 0)], colors=[_red, _cyan]):
 
@@ -310,6 +315,9 @@ def anaglifo(img, shifts=[(-5, 0), (5, 0)], colors=[_red, _cyan]):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+    cv2.imwrite('9_4_anaglyph.jpg', anaglyph_img)
+
+
 # Póster - Reducir el número de colores presente en la imagen
 def reduce_colors(img, kmeans, n_colors):
     if kmeans:
@@ -334,7 +342,8 @@ def reduce_colors(img, kmeans, n_colors):
         cv2.imshow("posterized", posterized)
         cv2.waitKey(0)
 
-        return posterized
+        cv2.imwrite('3_posterized.jpg', posterized)
+
 
     else:
         # Agrupamos los valores R, G y B en <n_colors> grupos
@@ -346,7 +355,8 @@ def reduce_colors(img, kmeans, n_colors):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-        return posterized
+        cv2.imwrite('3_posterized.jpg', posterized)
+
 
 def distorsion_function(x, y, cx, cy, k1, k2):
 
@@ -378,15 +388,15 @@ def add_distortion(img, k1, k2):
             # Calculamos la posición original de cada píxel en la imagen distorsionada
             x_p, y_p = distorsion_function(x, y, cx, cy, k1, k2)
 
-            if 0 <= x_p < ancho and 0 <= y_p < alto:
+            if 0 <= x_p and x_p < ancho and 0 <= y_p and y_p < alto:
                 # Aplicamos el pixel calculado original en el pixel distorsionado
-                distorted_img[x, y] = img[y_p, x_p]
+                distorted_img[y, x] = img[y_p, x_p]
 
     cv2.imshow('distorted', distorted_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    return distorted_img
+    cv2.imwrite('7_distorted.jpg', distorted_img)
 
 # Menu de opciones
 def select_menu():
@@ -429,23 +439,23 @@ def select_menu():
                 color = input("¿Quiere la imagen a color? (s/n): ")
                 if acum_or_linear == 's' or acum_or_linear == 'S':
                     if color == 's' or color == 'S':
-                        img = improve_contrast_acum(img, color=True)
+                        improve_contrast_acum(img, color=True)
                     else:
-                        img = improve_contrast_acum(img)
+                        improve_contrast_acum(img)
                 else:
                     gain = input("Introduzca el contraste (gain): ")
                     bias = input("Introduzca el brillo (bias): ")
 
                     if color == 's' or color == 'S':
-                        img = improve_contrast_linear(img, gain, bias, color=True)
+                        improve_contrast_linear(img, gain, bias, color=True)
                     else:
-                        img = improve_contrast_linear(img, gain, bias)
+                        improve_contrast_linear(img, gain, bias)
             else:
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '5':
             if img_taken:
                 color = input("Ingrese el color (r/g/b): ")
-                img = change_skin(img, color)
+                change_skin(img, color)
             else:
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '6':
@@ -459,14 +469,14 @@ def select_menu():
                     n_colors = int(input("Ingrese el nivel de posterizado:"))
                     kmeans = False
 
-                img = reduce_colors(img, kmeans, n_colors)
+                reduce_colors(img, kmeans, n_colors)
             else:
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '7':
             if img_taken:
                 k1 = float(input("Ingrese el valor de k1: "))
                 k2 = float(input("Ingrese el valor de k2: "))
-                img = add_distortion(img, k1, k2)
+                add_distortion(img, k1, k2)
             else:
                 print("\n## Primero debe tomar una imagen ##\n")
         elif option == '8':
