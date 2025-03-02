@@ -234,7 +234,7 @@ def camara_termica(img):
     cv2.imshow('thermal', thermal)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    cv2.imwrite('9_1_termica.jpg', thermal)
+    cv2.imwrite('8_1_termica.jpg', thermal)
 
 def pixel_art(img, pixel_size=10):
 
@@ -257,7 +257,7 @@ def pixel_art(img, pixel_size=10):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    cv2.imwrite('9_2_pixelated.jpg', pixelated_img)
+    cv2.imwrite('8_2_pixelated.jpg', pixelated_img)
 
 def glitch(img, intensity=10, color_shift=True):
     height, width, channels = img.shape
@@ -289,7 +289,7 @@ def glitch(img, intensity=10, color_shift=True):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    cv2.imwrite('9_3_glitch.jpg', glitched_img)
+    cv2.imwrite('8_3_glitch.jpg', glitched_img)
 
 def anaglifo(img, shifts=[(-5, 0), (5, 0)], colors=[_red, _cyan]):
 
@@ -317,7 +317,7 @@ def anaglifo(img, shifts=[(-5, 0), (5, 0)], colors=[_red, _cyan]):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    cv2.imwrite('9_4_anaglyph.jpg', anaglyph_img)
+    cv2.imwrite('8_4_anaglyph.jpg', anaglyph_img)
 
 # Póster - Reducir el número de colores presente en la imagen
 def reduce_colors(img, kmeans, n_colors):
