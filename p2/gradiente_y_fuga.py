@@ -1,8 +1,9 @@
 import cv2 
-import numpy as np 
-import random
+import numpy as np
+from numpy.ma.core import arctan2
 
-# Funcion para tomar una imagen de la webcam 
+
+# Funcion para tomar una imagen de la webcam
 def take_picture():
     cap = cv2.VideoCapture(0)
     print("Presione 'q' sobre la ventana de video para tomar la imagen")
@@ -38,7 +39,7 @@ def gaussian_derivative(value, sigma = 1):
     return ((-value / (sigma ** 2))) * (np.exp(-(value ** 2)/(2 * sigma ** 2)))
 
 
-def calcular_grad_horizontal(img, op):
+def calcular_grad_horizontal(img, op, ret = False):
     kernel = None
     alto, ancho = img.shape
 
@@ -56,17 +57,17 @@ def calcular_grad_horizontal(img, op):
     elif op == "3": # Canny
         
         # kernels separados (horizontal y vertical)
-        kernel_h = np.array([[gaussian_derivative(-2),
-                              gaussian_derivative(-1),
-                              gaussian_derivative(0),
+        kernel_h = np.array([[gaussian_derivative(2),
                               gaussian_derivative(1),
-                              gaussian_derivative(2)]], dtype=np.float32)
+                              gaussian_derivative(0),
+                              gaussian_derivative(-1),
+                              gaussian_derivative(-2)]], dtype=np.float32)
         
-        kernel_v = np.array([[[gaussian_filter(-2)],
-                                [gaussian_filter(-1)],
-                                [gaussian_filter(0)],
+        kernel_v = np.array([[[gaussian_filter(2)],
                                 [gaussian_filter(1)],
-                                [gaussian_filter(2)]]], dtype=np.float32)
+                                [gaussian_filter(0)],
+                                [gaussian_filter(-1)],
+                                [gaussian_filter(-2)]]], dtype=np.float32)
         
         # Calculamos K, que es la suma de los valores positivos tanto del kernel horizontal como del vertical
         k = sum(v for v in kernel_h[0] if v > 0) + sum(v[0] for v in kernel_v if v[0] > 0)
@@ -82,18 +83,20 @@ def calcular_grad_horizontal(img, op):
     img_gaus = cv2.GaussianBlur(img, (3, 3), 0)
     grad_h = cv2.filter2D(img_gaus, ddepth=cv2.CV_64F, kernel=kernel)
 
-    showable_grad_h = np.zeros((alto, ancho, 1), dtype=np.uint8)
-    i = 0
-    for y in range(alto):
-        for x in range(ancho):
-            showable_grad_h[y,x] = np.clip(grad_h[y,x]/2 + 128, 0, 255).astype(np.uint8) 
-            i += 1
+    if ret:
+        return grad_h
     
-    cv2.imshow('Gradiente Horizontal', showable_grad_h)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    else:
+        showable_grad_h = np.zeros((alto, ancho, 1), dtype=np.uint8)
+        for y in range(alto):
+            for x in range(ancho):
+                showable_grad_h[y,x] = np.clip(grad_h[y,x]/2 + 128, 0, 255).astype(np.uint8) 
+        
+        cv2.imshow('Gradiente Horizontal', showable_grad_h)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
-def calcular_grad_vertical(img, op):
+def calcular_grad_vertical(img, op, ret = False):
     kernel = None
     alto, ancho = img.shape
 
@@ -137,23 +140,56 @@ def calcular_grad_vertical(img, op):
     img_gaus = cv2.GaussianBlur(img, (3, 3), 0)
     grad_v = cv2.filter2D(img_gaus, ddepth=cv2.CV_64F, kernel=kernel)
 
-    showable_grad_v = np.zeros((alto, ancho, 1), dtype=np.uint8)
-    i = 0
+    if ret:
+        return grad_v
+    
+    else:
+        showable_grad_v = np.zeros((alto, ancho, 1), dtype=np.uint8)
+        for y in range(alto):
+            for x in range(ancho):
+                showable_grad_v[y,x] = np.clip(grad_v[y,x]/2 + 128, 0, 255).astype(np.uint8) 
+        
+        cv2.imshow('Gradiente Vertical', showable_grad_v)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    
+
+def calcular_modulo_grad(img, operator):
+    alto, ancho = img.shape
+
+    grad_h = calcular_grad_horizontal(img, operator, ret=True)
+    grad_v = calcular_grad_vertical(img, operator, ret=True)
+
+    showable_grad = np.zeros((alto, ancho, 1), dtype=np.uint8)
+
     for y in range(alto):
         for x in range(ancho):
-            showable_grad_v[y,x] = np.clip(grad_v[y,x]/2 + 128, 0, 255).astype(np.uint8) 
-            i += 1
+            showable_grad[y,x] = np.clip(np.sqrt(grad_h[y,x] ** 2 + grad_v[y,x] ** 2), 0, 255).astype(np.uint8)
+            
     
-    cv2.imshow('Gradiente Vertical', showable_grad_v)
+    cv2.imshow('Gradiente Modulo', showable_grad)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    
 
-def calcular_modulo_grad(grad_h, grad_v):
-    ...
 
-def calcular_orientacion_grad(grad_h, grad_v):
-    ...
+
+def calcular_orientacion_grad(img, operator):
+    alto, ancho = img.shape
+
+    grad_h = calcular_grad_horizontal(img, operator, ret=True)
+    grad_v = calcular_grad_vertical(img, operator, ret=True)
+
+    showable_grad = np.zeros((alto, ancho, 1), dtype=np.uint8)
+
+    for y in range(alto):
+        for x in range(ancho):
+            atan2 = arctan2(grad_h[y,x], grad_v[y,x])
+            showable_grad[y, x] = np.clip(atan2 * (180/np.pi), 0, 255).astype(np.uint8)
+
+    cv2.imshow('Gradiente Direccion', showable_grad)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 # Menú gráfico que permite 
 def select_menu():
@@ -214,10 +250,10 @@ def select_menu():
                     calcular_grad_vertical(img, operator)
                     
                 elif sub_option == '3':
-                    calcular_modulo_grad(grad_h, grad_v)
+                    calcular_modulo_grad(img, operator)
                     
                 elif sub_option == '4':
-                    calcular_orientacion_grad(grad_h, grad_v)
+                    calcular_orientacion_grad(img, operator)
                 else:
                     print("Opción no válida")
             else:
