@@ -184,8 +184,9 @@ def calcular_orientacion_grad(img, operator):
 
     for y in range(alto):
         for x in range(ancho):
-            atan2 = arctan2(grad_h[y,x], grad_v[y,x])
-            showable_grad[y, x] = np.clip(atan2 * (180/np.pi), 0, 255).astype(np.uint8)
+            atan2 = arctan2(grad_v[y,x], grad_h[y,x])
+            atan2_deg = atan2 * (180/np.pi)
+            showable_grad[y, x] = np.clip(atan2_deg / 2 + 128, 0, 255).astype(np.uint8)
 
     cv2.imshow('Gradiente Direccion', showable_grad)
     cv2.waitKey(0)
