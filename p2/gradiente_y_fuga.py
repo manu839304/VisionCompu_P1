@@ -85,12 +85,12 @@ def calcular_grad_horizontal(img, op, ret = False):
 
 
     if ret:
-        array_grad_h = grad_h.flatten()
-        print("Valor máximo: ", max(array_grad_h))
-        print("Valor mínimo: ", min(array_grad_h))
         return grad_h
     
     else:
+        array_grad_h = grad_h.flatten()
+        print("Valor máximo: ", max(array_grad_h))
+        print("Valor mínimo: ", min(array_grad_h))
         showable_grad_h = np.zeros((alto, ancho, 1), dtype=np.uint8)
         for y in range(alto):
             for x in range(ancho):
@@ -147,12 +147,12 @@ def calcular_grad_vertical(img, op, ret = False):
     grad_v = cv2.filter2D(img_gaus, ddepth=cv2.CV_64F, kernel=kernel)
 
     if ret:
-        array_grad_v = grad_v.flatten()
-        print("Valor máximo: ", max(array_grad_v))
-        print("Valor mínimo: ", min(array_grad_v))
         return grad_v
     
     else:
+        array_grad_v = grad_v.flatten()
+        print("Valor máximo: ", max(array_grad_v))
+        print("Valor mínimo: ", min(array_grad_v))
         showable_grad_v = np.zeros((alto, ancho, 1), dtype=np.uint8)
         for y in range(alto):
             for x in range(ancho):
@@ -170,7 +170,7 @@ def calcular_modulo_grad(img, operator):
     grad_h = calcular_grad_horizontal(img, operator, True)
     grad_v = calcular_grad_vertical(img, operator, True)
 
-    mod_grad = np.zeros((alto, ancho, 1), dtype=np.uint8)
+    mod_grad = np.zeros((alto, ancho, 1), dtype=np.float32)
     showable_grad = np.zeros((alto, ancho, 1), dtype=np.uint8)
 
     for y in range(alto):
@@ -195,14 +195,14 @@ def calcular_orientacion_grad(img, operator):
     grad_v = calcular_grad_vertical(img, operator, True)
 
     showable_grad = np.zeros((alto, ancho, 1), dtype=np.uint8)
-    dir_grad = np.zeros((alto, ancho, 1), dtype=np.uint8)
+    dir_grad = np.zeros((alto, ancho, 1), dtype=np.float32)
 
     for y in range(alto):
         for x in range(ancho):
             atan2 = arctan2(grad_v[y,x], grad_h[y,x])
             atan2_deg = atan2 * (180/np.pi)
-            dir_grad[y, x] = np.clip(atan2_deg, 0, 255).astype(np.uint8)
-            showable_grad[y, x] = np.clip(atan2_deg / 2 + 128, 0, 255).astype(np.uint8)
+            dir_grad[y, x] = atan2_deg
+            showable_grad[y, x] = np.clip((atan2_deg / 2 + 90) * (255/180), 0, 255).astype(np.uint8)
 
     array_dir_v = dir_grad.flatten()
     print("Valor máximo: ", max(array_dir_v))
