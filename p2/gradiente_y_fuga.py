@@ -212,7 +212,65 @@ def calcular_orientacion_grad(img, operator):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-# Menú gráfico que permite 
+# punto de fuga utilizando transformada de Hough (votando solo en la línea del horizonte)
+def detectar_punto_fuga(img, operator, threshold=400, paso=1):
+    """
+      img       : imagen en escala de grises
+      operator  : [1,2,3] segun el operador usado en los gradientes
+      threshold : valor umbral para permitir voto (en funcion del modulo del gradiente)
+      paso      : discretizacion para los candidatos en la línea del horizonte (valor en pixeles)
+    """
+    alto, ancho = img.shape
+    grad_h = calcular_grad_horizontal(img, operator, True)
+    grad_v = calcular_grad_vertical(img, operator, True)
+    
+    # módulo y orientacion en radianes
+    mag = np.sqrt(grad_h**2 + grad_v**2)
+    orientation = np.arctan2(grad_v, grad_h)
+    
+    # linea del horizonte 
+    y_h = alto // 2
+    
+    # bins de tamaño 'paso', si se discretiza la linea del hroizonte
+    n_bins = ancho // paso
+    acum = np.zeros(n_bins, dtype=np.float32)
+    
+    epsilon = 1e-6  #  para evitar division por cero
+    for y in range(alto):
+        for x in range(ancho):
+            # solo se vota si el modulo es superior al umbral
+            if mag[y, x] > threshold:
+                theta = orientation[y, x]
+                tan_theta = np.tan(theta)
+                if abs(tan_theta) < epsilon:
+                    continue
+                # calculamos el candidato en x que se obtiene al proyectar la linea.
+                # y_h = y + tan(theta)*(x_candidate - x)  ==>  x_candidate = x + (y_h - y)/tan(theta)
+                x_candidate = x + (y_h - y) / tan_theta
+                if 0 <= x_candidate < ancho:
+                    # Discretizamos
+                    ix = int(round(x_candidate / paso))
+                    if ix >= n_bins:
+                        ix = n_bins - 1
+                    # sumamos un voto al bin correspondiente
+                    acum[ix] += mag[y, x]
+    
+    # el candidato con mayor acumulacion será el punto de fuga
+    best_bin = int(np.argmax(acum))
+    # pasamos a coordenadas de la imagen
+    x_v = int(round(best_bin * paso + paso/2))
+    
+    print("Punto de fuga encontrado en (x, y):", (x_v, y_h))
+    print("Votos máximos acumulados:", acum[best_bin])
+    
+    img_color = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    cv2.drawMarker(img_color, (x_v, y_h), (0, 0, 255),
+                   markerType=cv2.MARKER_CROSS,
+                   markerSize=20, thickness=2)
+    cv2.imshow('Punto de Fuga Detectado', img_color)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
 def select_menu():
     img_taken = False
     img = None
@@ -244,7 +302,7 @@ def select_menu():
             if img_taken:
                 show_image_and_properties(img)
             else:
-                print("\n## Primero debe tomar una imagen ##\n")
+                print("\n## Primero debe tomar o cargar una imagen ##\n")
 
         elif option == '4':
             if img_taken:
@@ -263,23 +321,37 @@ def select_menu():
                 print("----------------------------------------------------")
                 sub_option = input("Seleccione una opción: ")
 
-
                 if sub_option == '1':
                     calcular_grad_horizontal(img, operator)
-                    
                 elif sub_option == '2':
                     calcular_grad_vertical(img, operator)
-                    
                 elif sub_option == '3':
                     calcular_modulo_grad(img, operator)
-                    
                 elif sub_option == '4':
                     calcular_orientacion_grad(img, operator)
                 else:
                     print("Opción no válida")
             else:
-                print("\n## Primero debe tomar una imagen ##\n")
+                print("\n## Primero debe tomar o cargar una imagen ##\n")
  
+        elif option == '5':
+            if img_taken:
+                print("----------------------------------------------------")
+                print("(1) Sobel")
+                print("(2) Scharr")
+                print("(3) Canny")
+                print("----------------------------------------------------")
+                operator = input("Seleccione un operador para los gradientes: ")
+                try:
+                    threshold = float(input("Ingrese el umbral para el módulo del gradiente: "))
+                except Exception as e:
+                    print("Valor de umbral incorrecto, se usará 400")
+                    threshold = 400
+                # se puede ajustar paso segun el nivel de discretización que queramos (paso=1 es cada pixel)
+                detectar_punto_fuga(img, operator, threshold, paso=1)
+            else:
+                print("\n## Primero debe tomar o cargar una imagen ##\n")
+
         elif option == '6':
             end = True
         else:
