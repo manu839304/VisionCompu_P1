@@ -8,7 +8,6 @@ import seaborn as sns
 
 from extract_and_compare import (
     cargar_imagenes,
-    inicializar_detector,
     detectar_caracteristicas,
     emparejar_features,
     mostrar_emparejamientos,
@@ -20,7 +19,7 @@ metodos = {
     "ORB": {"params": {"nfeatures": [300, 500, 1000, 2000, 3000, 10000]}},
     "AKAZE": {"params": {"dummy": [None]}},  # AKAZE no tiene parámetro nfeatures
     "SIFT": {"params": {"nfeatures": [300, 500, 1000, 2000, 3000, 10000]}},
-    # --- FALTA HARRIS ---
+    "HARRIS": {"params": {"nfeatures": [300, 500, 1000, 2000, 3000, 10000]}},
 }
 
 tipos_emparejamiento = ["NN", "NNDR"]
@@ -42,15 +41,13 @@ for metodo, config in metodos.items():
         for valor in valores:
             for tipo in tipos_emparejamiento:
                 if metodo == 'AKAZE':
-                    detector = inicializar_detector(metodo)
                     nombre = f"{metodo}_{tipo}"
                 else:
-                    detector = inicializar_detector(metodo, nfeatures=valor)
                     nombre = f"{metodo}_{valor}_{tipo}"
 
                 # Detectar características
-                kp1, desc1, tiempo1 = detectar_caracteristicas(detector, img1)
-                kp2, desc2, tiempo2 = detectar_caracteristicas(detector, img2)
+                kp1, desc1, tiempo1 = detectar_caracteristicas(img1, metodo, valor)
+                kp2, desc2, tiempo2 = detectar_caracteristicas(img2, metodo, valor)
 
                 if desc1 is None or desc2 is None:
                     print(f"{nombre}: Descriptores no encontrados.")
@@ -100,6 +97,9 @@ colores_tipo = {
 
     "SIFT_NN": "#d62728",       # Rojo
     "SIFT_NNDR": "#f1948a",     # Rojo claro
+
+    "HARRIS_NN": "#ff7f0e",     # Naranja
+    "HARRIS_NNDR": "#ffb84d",   # Naranja claro
 }
 
 sns.set_theme(style="whitegrid")

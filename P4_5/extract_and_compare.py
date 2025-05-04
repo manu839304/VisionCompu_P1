@@ -17,17 +17,40 @@ def inicializar_detector(nombre, nfeatures=500):
         return cv2.SIFT_create(nfeatures=nfeatures)
     elif nombre == 'AKAZE':
         return cv2.AKAZE_create()
-    elif nombre == 'HARRIS':
-        raise NotImplementedError("HARRIS no implementado como detector + descriptor.")
     else:
         raise ValueError("Detector no reconocido")
 
-def detectar_caracteristicas(detector, imagen):
+def detectar_caracteristicas(imagen, nombre_detector, nfeatures=500):
+    if nombre_detector == 'HARRIS':
+        return detectar_harris(imagen=imagen, nfeatures=nfeatures)
+    else:
+        detector = inicializar_detector(nombre=nombre_detector, nfeatures=nfeatures)
+        inicio = time.time()
+        keypoints, descriptors = detector.detectAndCompute(imagen, None)
+        tiempo = time.time() - inicio
+        return keypoints, descriptors, tiempo
+
+def detectar_harris(imagen, nfeatures):
     inicio = time.time()
-    # GFTT (HARRIS) solo detecta keypoints, no descriptores
-    keypoints, descriptors = detector.detectAndCompute(imagen, None)
+    
+    puntos = cv2.goodFeaturesToTrack(
+        imagen,
+        maxCorners=nfeatures,
+        useHarrisDetector=True,
+    )
+
+    if puntos is None:
+        return [], None, time.time() - inicio
+
+    keypoints = [cv2.KeyPoint(float(p[1]), float(p[0]), 3) for p in puntos]
+
+    # HARRIS no genera descriptores, usamos ORB para ello
+    orb = inicializar_detector('ORB', nfeatures=nfeatures)
+    keypoints, descriptors = orb.compute(imagen, keypoints)
+
     tiempo = time.time() - inicio
     return keypoints, descriptors, tiempo
+
 
 def emparejar_features(desc1, desc2, metodo='brute-force', ratio=0.75, tipo='NN'):
     # Detecta si los descriptores son binarios (ORB, AKAZE) o flotantes (SIFT)
@@ -95,11 +118,9 @@ if __name__ == "__main__":
     # ==== PROCESAMIENTO ====
 
     img1, img2 = cargar_imagenes(ruta_img1, ruta_img2)
-
-    detector = inicializar_detector(detector_nombre, nfeatures)
-
-    kp1, desc1, tiempo1 = detectar_caracteristicas(detector, img1)
-    kp2, desc2, tiempo2 = detectar_caracteristicas(detector, img2)
+    
+    kp1, desc1, tiempo1 = detectar_caracteristicas(img1, detector_nombre, nfeatures)
+    kp2, desc2, tiempo2 = detectar_caracteristicas(img2, detector_nombre, nfeatures)
 
     matches, tiempo_match = emparejar_features(desc1, desc2, metodo='brute-force', tipo=tipo_emparejamiento)
 
