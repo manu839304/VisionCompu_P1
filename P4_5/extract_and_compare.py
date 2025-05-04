@@ -35,6 +35,8 @@ def detectar_harris(imagen, nfeatures):
     
     puntos = cv2.goodFeaturesToTrack(
         imagen,
+        minDistance=5,
+        qualityLevel=0.01,
         maxCorners=nfeatures,
         useHarrisDetector=True,
     )
@@ -42,7 +44,7 @@ def detectar_harris(imagen, nfeatures):
     if puntos is None:
         return [], None, time.time() - inicio
 
-    keypoints = [cv2.KeyPoint(float(p[1]), float(p[0]), 3) for p in puntos]
+    keypoints = [cv2.KeyPoint(float(p[0][0]), float(p[0][1]), 3) for p in puntos]
 
     # HARRIS no genera descriptores, usamos ORB para ello
     orb = inicializar_detector('ORB', nfeatures=nfeatures)
