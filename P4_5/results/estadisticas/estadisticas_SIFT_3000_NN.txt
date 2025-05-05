@@ -1,6 +1,6 @@
-Tiempo detección imagen 1: 0.0842 s
-Tiempo detección imagen 2: 0.1089 s
-Tiempo emparejamiento: 0.1176 s
+Tiempo detección imagen 1: 0.1237 s
+Tiempo detección imagen 2: 0.1195 s
+Tiempo emparejamiento: 0.1289 s
 Puntos detectados en img1: 1941
 Puntos detectados en img2: 2206
 Número de emparejamientos: 765
