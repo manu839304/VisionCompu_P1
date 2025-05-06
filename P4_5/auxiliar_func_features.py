@@ -138,7 +138,7 @@ def calcular_homografia_ransac_manual(kp1, kp2, matches, num_iter=10000, umbral=
         sample_pts2 = pts2[idxs]
 
         try:
-            H = calcular_homografia_dlt(sample_pts1, sample_pts2)
+            H = calcular_homografia_dlt(sample_pts2, sample_pts1)
         except np.linalg.LinAlgError: # Si surge algún error, ignoramos la iteración
             continue
 
@@ -163,7 +163,7 @@ def calcular_homografia_ransac_manual(kp1, kp2, matches, num_iter=10000, umbral=
     # Recalculamos H con todos los inliers
     inlier_pts1 = pts1[max_inliers]
     inlier_pts2 = pts2[max_inliers]
-    H_final = calcular_homografia_dlt(inlier_pts1, inlier_pts2)
+    H_final = calcular_homografia_dlt(inlier_pts2, inlier_pts1)
 
     return H_final, max_inliers.tolist()
 
