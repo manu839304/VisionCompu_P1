@@ -21,6 +21,7 @@ def inicializar_detector(nombre, nfeatures=500):
         raise ValueError("Detector no reconocido")
 
 def detectar_caracteristicas(imagen, nombre_detector, nfeatures=500):
+    "Detectores posibles: ORB, SIFT, AKAZE, HARRIS"
     if nombre_detector == 'HARRIS':
         return detectar_harris(imagen=imagen, nfeatures=nfeatures)
     else:
@@ -121,30 +122,52 @@ def calcular_homografia_ransac(kp1, kp2, matches):
 def dibujar_inliers(img1, kp1, img2, kp2, matches, inliers, nombre='inliers'):
     inlier_matches = [m for i, m in enumerate(matches) if inliers[i]]
     resultado = cv2.drawMatches(img1, kp1, img2, kp2, inlier_matches, None, flags=2)
-    cv2.imwrite(f"results/imagenes_inliers/{nombre}.jpg", resultado)
+    cv2.imwrite(f"results/imagenes_inliers/{nombre}.png", resultado)
+
 
 
 def crear_panorama(img1, img2, H):
-    # Calculamos tamaño de la imagen final
     h1, w1 = img1.shape[:2]
     h2, w2 = img2.shape[:2]
 
-    corners_img2 = np.float32([[0,0], [0,h2], [w2,h2], [w2,0]]).reshape(-1,1,2)
-    transformed_corners = cv2.perspectiveTransform(corners_img2, H)
+    # Convertir imágenes a BGRA (añadir canal alfa)
+    img1_rgba = cv2.cvtColor(img1, cv2.COLOR_BGR2BGRA)
+    img2_rgba = cv2.cvtColor(img2, cv2.COLOR_BGR2BGRA)
 
-    all_corners = np.concatenate((np.float32([[0,0], [0,h1], [w1,h1], [w1,0]]).reshape(-1,1,2), transformed_corners), axis=0)
-    [xmin, ymin] = np.int32(all_corners.min(axis=0).ravel() - 0.5)
-    [xmax, ymax] = np.int32(all_corners.max(axis=0).ravel() + 0.5)
+    # Transformar esquinas de img2
+    corners_img2 = np.float32([[0, 0], [0, h2], [w2, h2], [w2, 0]]).reshape(-1, 1, 2)
+    transformed_corners_img2 = cv2.perspectiveTransform(corners_img2, H)
 
-    # Hacemos translación, warp y combinamos las imágenes
-    translacion = [-xmin, -ymin]
-    H_translation = np.array([[1, 0, translacion[0]], [0, 1, translacion[1]], [0, 0, 1]])
-    
-    resultado = cv2.warpPerspective(img2, H_translation @ H, (xmax - xmin, ymax - ymin))
-    resultado[translacion[1]:h1+translacion[1], translacion[0]:w1+translacion[0]] = img1
+    # Calcular dimensiones del panorama
+    corners = np.concatenate((np.float32([[0, 0], [0, h1], [w1, h1], [w1, 0]]).reshape(-1, 1, 2), transformed_corners_img2), axis=0)
+    [xmin, ymin] = np.int32(corners.min(axis=0).ravel() - 0.5)
+    [xmax, ymax] = np.int32(corners.max(axis=0).ravel() + 0.5)
+    translation = [-xmin, -ymin]
+    H_translation = np.array([[1, 0, translation[0]], [0, 1, translation[1]], [0, 0, 1]])
 
-    return resultado
+    # Crear el lienzo y pintar img2 en él
+    panorama = cv2.warpPerspective(img2_rgba, H_translation @ H, (xmax - xmin, ymax - ymin))
 
+    # Superponer img1 respetando la transparencia
+    overlay = np.zeros_like(panorama)
+    overlay[translation[1]:translation[1]+h1, translation[0]:translation[0]+w1] = img1_rgba
+
+    # Combinar usando el canal alfa
+    alpha_overlay = (overlay[:, :, 3] / 255.0)
+    alpha_panorama = (panorama[:, :, 3] / 255.0)
+
+    combined = np.zeros_like(panorama)
+
+    for c in range(3):
+        combined[:, :, c] = (
+            overlay[:, :, c] * alpha_overlay +
+            panorama[:, :, c] * (1 - alpha_overlay)
+        ).astype(np.uint8)
+
+    # Actualizar el canal alfa del panorama combinado
+    combined[:, :, 3] = np.clip(overlay[:, :, 3] + panorama[:, :, 3], 0, 255)
+
+    return combined
 
 
 if __name__ == "__main__":

@@ -1,104 +1,119 @@
 import os
 import cv2
-import time
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
-
+import itertools
 from auxiliar_func_features import (
-    cargar_imagenes,
     detectar_caracteristicas,
     emparejar_features,
-    mostrar_emparejamientos,
-    imprimir_estadisticas,
     calcular_homografia_ransac,
-    dibujar_inliers,
     crear_panorama
 )
 
-# Métodos y parámetros a evaluar
-metodos = {
-    "ORB": {"params": {"nfeatures": [300, 500, 1000, 2000, 3000, 10000]}},
-    "AKAZE": {"params": {"dummy": [None]}},  # AKAZE no tiene parámetro nfeatures
-    "SIFT": {"params": {"nfeatures": [300, 500, 1000, 2000, 3000, 10000]}},
-    "HARRIS": {"params": {"nfeatures": [300, 500, 1000, 2000, 3000, 10000]}},
-}
+def cargar_imagenes_desde_carpeta(carpeta):
+    extensiones = ['.jpg', '.jpeg', '.png']
+    imagenes = [
+        os.path.join(carpeta, f)
+        for f in sorted(os.listdir(carpeta))
+        if os.path.splitext(f)[1].lower() in extensiones
+    ]
+    return [cv2.imread(ruta) for ruta in imagenes]
 
-tipos_emparejamiento = ["NN", "NNDR"]
+def es_homografia_valida(H):
+    return H is not None and not (np.isnan(H).any() or np.isinf(H).any())
 
-# Cargar imágenes
-img1, img2 = cargar_imagenes('BuildingScene/building1.jpg', 'BuildingScene/building2.jpg')
+def construir_panorama_ordenado(imagenes, orden="izquierda-derecha", metodo="SIFT", nfeatures=2000):
+    if orden == "derecha-izquierda":
+        imagenes = imagenes[::-1]
 
-# Crear carpetas si no existen
-os.makedirs("results/estadisticas", exist_ok=True)
-os.makedirs("results/tablas", exist_ok=True)
-os.makedirs("results/graficas", exist_ok=True)
-os.makedirs("results/imagenes_inliers", exist_ok=True)
-os.makedirs("results/panoramas", exist_ok=True)
+    panorama = imagenes[0]
+    for i in range(1, len(imagenes)):
+        img_siguiente = imagenes[i]
 
-# Resultados acumulados
-resultados = []
+        kp1, desc1, _ = detectar_caracteristicas(panorama, metodo, nfeatures)
+        kp2, desc2, _ = detectar_caracteristicas(img_siguiente, metodo, nfeatures)
 
-# Comparaciones
-for metodo, config in metodos.items():
-    for param, valores in config['params'].items():
-        for valor in valores:
-            for tipo in tipos_emparejamiento:
-                if metodo == 'AKAZE':
-                    nombre = f"{metodo}_{tipo}"
-                else:
-                    nombre = f"{metodo}_{valor}_{tipo}"
+        if desc1 is None or desc2 is None:
+            print(f"No descriptores válidos entre imagen {i-1} y {i}")
+            continue
 
-                # Calculamos las características
-                kp1, desc1, tiempo1 = detectar_caracteristicas(img1, metodo, valor)
-                kp2, desc2, tiempo2 = detectar_caracteristicas(img2, metodo, valor)
+        matches, _ = emparejar_features(desc1, desc2, metodo="brute-force", tipo="NN")
 
-                if desc1 is None or desc2 is None:
-                    print(f"{nombre}: Descriptores no encontrados.")
-                    continue
+        H, inliers = calcular_homografia_ransac(kp1, kp2, matches)
+        if not es_homografia_valida(H):
+            print(f"Homografía inválida entre imagen {i-1} y {i}")
+            continue
 
-                # Emparejamos las características
-                try:
-                    matches, tiempo_match = emparejar_features(desc1, desc2, metodo='brute-force', tipo=tipo)
-                except Exception as e:
-                    print(f"Error emparejando {nombre}: {e}")
-                    continue
+        panorama = crear_panorama(panorama, img_siguiente, H)
 
-                mostrar_emparejamientos(img1, kp1, img2, kp2, matches, f"{nombre}")
+    return panorama
 
-                # Guardamos resultados
-                imprimir_estadisticas(
-                    tiempo1, tiempo2, tiempo_match, kp1, kp2, matches,
-                    f"results/estadisticas/estadisticas_{nombre}.txt"
-                )
+def construir_panorama_desordenado(imagenes, metodo="SIFT", nfeatures=2000):
+    # Calcular todas las combinaciones posibles de pares y puntuar
+    n = len(imagenes)
+    usado = [False] * n
+    pares = []
 
-                resultados.append({
-                    "Metodo": metodo,
-                    "Parametro": valor if metodo != 'AKAZE' else '-',
-                    "Tipo": tipo,
-                    "Tiempo1": tiempo1,
-                    "Tiempo2": tiempo2,
-                    "Tiempo_Match": tiempo_match,
-                    "Keypoints1": len(kp1),
-                    "Keypoints2": len(kp2),
-                    "Matches": len(matches)
-                })
+    for (i, j) in itertools.combinations(range(n), 2):
+        kp1, desc1, _ = detectar_caracteristicas(imagenes[i], metodo, nfeatures)
+        kp2, desc2, _ = detectar_caracteristicas(imagenes[j], metodo, nfeatures)
 
-                # --------- PANORAMA ---------
-                # Calculamos homografia
-                H, inliers = calcular_homografia_ransac(kp1, kp2, matches)
-                if H is None:
-                    print("No se pudo calcular homografía")
-                    continue
-                
-                dibujar_inliers(img1, kp1, img2, kp2, matches, inliers, nombre="inliers_" + nombre)
+        if desc1 is None or desc2 is None:
+            continue
 
-                panorama = crear_panorama(img1, img2, H)
-                cv2.imwrite(f"results/panoramas/panorama_{nombre}.jpg", panorama)
+        matches, _ = emparejar_features(desc1, desc2, metodo="brute-force", tipo="NN")
+        H, inliers = calcular_homografia_ransac(kp1, kp2, matches)
 
+        if es_homografia_valida(H) and len(inliers) > 10:
+            pares.append((i, j, len(inliers), H))
 
-# Convertir a DataFrame
-df = pd.DataFrame(resultados)
-df.to_csv("results/tablas/resumen_resultados.csv", index=False)
-print("Resumen guardado en results/tablas/resumen_resultados.csv")
+    if not pares:
+        print("No se encontraron combinaciones válidas.")
+        return imagenes[0]
+
+    # Ordenamos los pares por número de inliers (mayor es mejor)
+    pares.sort(key=lambda x: x[2], reverse=True)
+
+    # Unimos primero el mejor par
+    i, j, _, H = pares[0]
+    panorama = crear_panorama(imagenes[i], imagenes[j], H)
+    usado[i] = usado[j] = True
+
+    # Intentar unir los restantes progresivamente
+    for idx in range(n):
+        if usado[idx]:
+            continue
+        kp1, desc1, _ = detectar_caracteristicas(panorama, "SIFT", 2000)
+        kp2, desc2, _ = detectar_caracteristicas(imagenes[idx], "SIFT", 2000)
+
+        if desc1 is None or desc2 is None:
+            continue
+
+        matches, _ = emparejar_features(desc1, desc2, metodo="brute-force", tipo="NN")
+        H, inliers = calcular_homografia_ransac(kp1, kp2, matches)
+
+        if es_homografia_valida(H) and len(inliers) > 10:
+            panorama = crear_panorama(panorama, imagenes[idx], H)
+            usado[idx] = True
+
+    return panorama
+
+# ===== MAIN =====
+if __name__ == "__main__":
+    carpeta = "BuildingScene3"  
+    orden = "desordenado"  # "izquierda-derecha", "derecha-izquierda", "desordenado"
+
+    metodo = "SIFT"  # "SIFT", "ORB", "AKAZE"
+    nfeatures = 2350
+
+    imagenes = cargar_imagenes_desde_carpeta(carpeta)
+    if len(imagenes) < 2:
+        print("Se necesitan al menos dos imágenes.")
+        exit()
+
+    if orden == "desordenado":
+        panorama_final = construir_panorama_desordenado(imagenes, metodo=metodo, nfeatures=nfeatures)
+    else:
+        panorama_final = construir_panorama_ordenado(imagenes, orden=orden, metodo=metodo, nfeatures=nfeatures)
+
+    cv2.imwrite("results/panorama_res_" + metodo + "_" + str(nfeatures) + ".png", panorama_final)
+    print("Panorama guardado en results/panorama_final.jpg")
