@@ -13,6 +13,7 @@ from auxiliar_func_features import (
     mostrar_emparejamientos,
     imprimir_estadisticas,
     calcular_homografia_ransac,
+    calcular_homografia_ransac_manual,
     dibujar_inliers,
     crear_panorama
 )
@@ -87,7 +88,7 @@ for metodo, config in metodos.items():
 
                 # --------- PANORAMA ---------
                 # Calculamos homografia
-                H, inliers = calcular_homografia_ransac(kp1, kp2, matches)
+                H, inliers = calcular_homografia_ransac_manual(kp1, kp2, matches)
                 if H is None:
                     print("No se pudo calcular homografía")
                     continue

@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import time
 import os
+import random
 
 def cargar_imagenes(path1, path2):
     img1 = cv2.imread(path1, cv2.IMREAD_GRAYSCALE)
@@ -117,6 +118,74 @@ def calcular_homografia_ransac(kp1, kp2, matches):
     
     return H, inliers
 
+
+
+def calcular_homografia_ransac_manual(kp1, kp2, matches, num_iter=10000, umbral=5.0):
+    if len(matches) < 4:
+        print("ERROR: Para calcular la homografía se necesitan al menos 4 matches")
+        return None, [], None
+
+    pts1 = np.float32([kp1[m.queryIdx].pt for m in matches])
+    pts2 = np.float32([kp2[m.trainIdx].pt for m in matches])
+
+    max_inliers = []
+    mejor_H = None
+
+    for _ in range(num_iter):
+        # Elegimos 4 matches aleatorios
+        idxs = random.sample(range(len(matches)), 4)
+        sample_pts1 = pts1[idxs]
+        sample_pts2 = pts2[idxs]
+
+        try:
+            H = calcular_homografia_dlt(sample_pts1, sample_pts2)
+        except np.linalg.LinAlgError: # Si surge algún error, ignoramos la iteración
+            continue
+
+        # Proyectamos todos los pts2 al sistema de pts1 usando H
+        pts2_h = np.concatenate([pts2, np.ones((pts2.shape[0], 1))], axis=1)
+        pts2_proj = (H @ pts2_h.T).T
+        pts2_proj = pts2_proj[:, :2] / pts2_proj[:, 2][:, np.newaxis]
+
+        # Calculamos distancias euclidianas entre puntos proyectados y reales 
+        # y filtramos las que no superan el umbral
+        dists = np.linalg.norm(pts1 - pts2_proj, axis=1)
+        inliers = dists < umbral
+
+        # Elegimos el mejor H
+        if np.sum(inliers) > np.sum(max_inliers):
+            max_inliers = inliers
+            mejor_H = H
+
+    if mejor_H is None or np.count_nonzero(max_inliers) < 4:
+        return None, max_inliers.tolist()
+
+    # Recalculamos H con todos los inliers
+    inlier_pts1 = pts1[max_inliers]
+    inlier_pts2 = pts2[max_inliers]
+    H_final = calcular_homografia_dlt(inlier_pts1, inlier_pts2)
+
+    return H_final, max_inliers.tolist()
+
+
+def calcular_homografia_dlt(p1, p2):
+    A = []
+    for i in range(len(p1)):
+        # Cada punto genera dos ecuaciones (8 en total)
+        x, y = p1[i]
+        xp, yp = p2[i]
+        A.append([-x, -y, -1, 0, 0, 0, x*xp, y*xp, xp])
+        A.append([0, 0, 0, -x, -y, -1, x*yp, y*yp, yp])
+    
+    # Resolvemos el sistema de ecuaciones
+    A = np.array(A)
+    _, _, V = np.linalg.svd(A)
+
+    # La última fila de V es el mejor ajuste
+    H = V[-1].reshape(3, 3)
+
+    # Normalizamos el resultado (cualquier valor escalar es equitativo)
+    return H / H[2, 2]
 
 def dibujar_inliers(img1, kp1, img2, kp2, matches, inliers, nombre='inliers'):
     inlier_matches = [m for i, m in enumerate(matches) if inliers[i]]
