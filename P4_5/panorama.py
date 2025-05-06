@@ -47,7 +47,7 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografi
             pares.append((i, j, len(inliers), H))
 
         # Dibujar inliers
-        nombre = f"inlier_{metodo}_{i}_{j}.png"
+        nombre = f"inlier_{metodo}_{i}_{j}"
         dibujar_inliers(imagenes[i], kp1, imagenes[j], kp2, matches, inliers, nombre)
         
     if not pares:
@@ -83,7 +83,7 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografi
 
 # ===== MAIN =====
 if __name__ == "__main__":
-    carpeta = "BuildingScene3"  
+    carpeta = "VPG/S21"
 
     metodo = "SIFT"  # "SIFT", "ORB", "AKAZE"
     nfeatures = 2350
