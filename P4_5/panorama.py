@@ -23,33 +23,7 @@ def cargar_imagenes_desde_carpeta(carpeta):
 def es_homografia_valida(H):
     return H is not None and not (np.isnan(H).any() or np.isinf(H).any())
 
-def construir_panorama_ordenado(imagenes, orden="izquierda-derecha", metodo="SIFT", nfeatures=2000):
-    if orden == "derecha-izquierda":
-        imagenes = imagenes[::-1]
-
-    panorama = imagenes[0]
-    for i in range(1, len(imagenes)):
-        img_siguiente = imagenes[i]
-
-        kp1, desc1, _ = detectar_caracteristicas(panorama, metodo, nfeatures)
-        kp2, desc2, _ = detectar_caracteristicas(img_siguiente, metodo, nfeatures)
-
-        if desc1 is None or desc2 is None:
-            print(f"No descriptores válidos entre imagen {i-1} y {i}")
-            continue
-
-        matches, _ = emparejar_features(desc1, desc2, metodo="brute-force", tipo="NN")
-
-        H, inliers = calcular_homografia_ransac(kp1, kp2, matches)
-        if not es_homografia_valida(H):
-            print(f"Homografía inválida entre imagen {i-1} y {i}")
-            continue
-
-        panorama = crear_panorama(panorama, img_siguiente, H)
-
-    return panorama
-
-def construir_panorama_desordenado(imagenes, metodo="SIFT", nfeatures=2000):
+def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000):
     # Calcular todas las combinaciones posibles de pares y puntuar
     n = len(imagenes)
     usado = [False] * n
@@ -102,7 +76,6 @@ def construir_panorama_desordenado(imagenes, metodo="SIFT", nfeatures=2000):
 # ===== MAIN =====
 if __name__ == "__main__":
     carpeta = "BuildingScene3"  
-    orden = "desordenado"  # "izquierda-derecha", "derecha-izquierda", "desordenado"
 
     metodo = "SIFT"  # "SIFT", "ORB", "AKAZE"
     nfeatures = 2350
@@ -112,10 +85,7 @@ if __name__ == "__main__":
         print("Se necesitan al menos dos imágenes.")
         exit()
 
-    if orden == "desordenado":
-        panorama_final = construir_panorama_desordenado(imagenes, metodo=metodo, nfeatures=nfeatures)
-    else:
-        panorama_final = construir_panorama_ordenado(imagenes, orden=orden, metodo=metodo, nfeatures=nfeatures)
+    panorama_final = construir_panorama(imagenes, metodo, nfeatures)
 
     cv2.imwrite("results/panorama_res_" + metodo + "_" + str(nfeatures) + ".png", panorama_final)
     print("Panorama guardado en results/panorama_final.jpg")
