@@ -23,7 +23,7 @@ def cargar_imagenes_desde_carpeta(carpeta):
 def es_homografia_valida(H):
     return H is not None and not (np.isnan(H).any() or np.isinf(H).any())
 
-def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000):
+def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografia=False):
     # Calcular todas las combinaciones posibles de pares y puntuar
     n = len(imagenes)
     usado = [False] * n
@@ -35,13 +35,21 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000):
 
         if desc1 is None or desc2 is None:
             continue
-
+        
         matches, _ = emparejar_features(desc1, desc2, metodo="brute-force", tipo="NN")
-        H, inliers = calcular_homografia_ransac(kp1, kp2, matches)
+
+        if manual_homografia:
+            H, inliers = calcular_homografia_ransac_manual(kp1, kp2, matches)
+        else:
+            H, inliers = calcular_homografia_ransac(kp1, kp2, matches)
 
         if es_homografia_valida(H) and len(inliers) > 10:
             pares.append((i, j, len(inliers), H))
 
+        # Dibujar inliers
+        nombre = f"inlier_{metodo}_{i}_{j}.png"
+        dibujar_inliers(imagenes[i], kp1, imagenes[j], kp2, matches, inliers, nombre)
+        
     if not pares:
         print("No se encontraron combinaciones válidas.")
         return imagenes[0]
@@ -88,4 +96,4 @@ if __name__ == "__main__":
     panorama_final = construir_panorama(imagenes, metodo, nfeatures)
 
     cv2.imwrite("results/panorama_res_" + metodo + "_" + str(nfeatures) + ".png", panorama_final)
-    print("Panorama guardado en results/panorama_final.jpg")
+    print("Panorama guardado en results/panorama_res_" + metodo + "_" + str(nfeatures) + ".png")
