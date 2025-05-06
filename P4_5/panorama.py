@@ -6,6 +6,8 @@ from auxiliar_func_features import (
     detectar_caracteristicas,
     emparejar_features,
     calcular_homografia_ransac,
+    calcular_homografia_ransac_manual,
+    dibujar_inliers,
     crear_panorama
 )
 
