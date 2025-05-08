@@ -5,8 +5,8 @@ import os
 import random
 
 def cargar_imagenes(path1, path2):
-    img1 = cv2.imread(path1, cv2.IMREAD_GRAYSCALE)
-    img2 = cv2.imread(path2, cv2.IMREAD_GRAYSCALE)
+    img1 = cv2.imread(path1, cv2.IMREAD_COLOR)
+    img2 = cv2.imread(path2, cv2.IMREAD_COLOR)
     if img1 is None or img2 is None:
         raise FileNotFoundError("No se pudieron cargar las imágenes. Verifica las rutas.")
     return img1, img2
@@ -22,13 +22,13 @@ def inicializar_detector(nombre, nfeatures=500):
         raise ValueError("Detector no reconocido")
 
 def detectar_caracteristicas(imagen, nombre_detector, nfeatures=500):
-    "Detectores posibles: ORB, SIFT, AKAZE, HARRIS"
+    gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)  # <-- convertir aquí
     if nombre_detector == 'HARRIS':
-        return detectar_harris(imagen=imagen, nfeatures=nfeatures)
+        return detectar_harris(imagen=gris, nfeatures=nfeatures)
     else:
         detector = inicializar_detector(nombre=nombre_detector, nfeatures=nfeatures)
         inicio = time.time()
-        keypoints, descriptors = detector.detectAndCompute(imagen, None)
+        keypoints, descriptors = detector.detectAndCompute(gris, None)
         tiempo = time.time() - inicio
         return keypoints, descriptors, tiempo
 
@@ -185,15 +185,12 @@ def calcular_homografia_dlt(p1, p2):
     # La última fila de V es el mejor ajuste
     H = V[-1].reshape(3, 3)
 
-    # Normalizamos el resultado (cualquier valor escalar es equitativo)
     return H / H[2, 2]
 
 def dibujar_inliers(img1, kp1, img2, kp2, matches, inliers, nombre='inliers'):
     inlier_matches = [m for i, m in enumerate(matches) if inliers[i]]
     resultado = cv2.drawMatches(img1, kp1, img2, kp2, inlier_matches, None, flags=2)
     cv2.imwrite(f"results/imagenes_inliers/{nombre}.png", resultado)
-
-
 
 def crear_panorama(img1, img2, H):
     h1, w1 = img1.shape[:2]

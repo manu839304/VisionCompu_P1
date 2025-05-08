@@ -24,7 +24,10 @@ def es_homografia_valida(H):
     return H is not None and not (np.isnan(H).any() or np.isinf(H).any())
 
 def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografia=False):
-    # Calcular todas las combinaciones posibles de pares y puntuar
+    # Crear carpeta para imágenes progresivas
+    carpeta_resultados = "results/imagenes_progresivas"
+    os.makedirs(carpeta_resultados, exist_ok=True)
+
     n = len(imagenes)
     usado = [False] * n
     pares = []
@@ -54,15 +57,17 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografi
         print("No se encontraron combinaciones válidas.")
         return imagenes[0]
 
-    # Ordenamos los pares por número de inliers (mayor es mejor)
     pares.sort(key=lambda x: x[2], reverse=True)
 
-    # Unimos primero el mejor par
     i, j, _, H = pares[0]
     panorama = crear_panorama(imagenes[i], imagenes[j], H)
     usado[i] = usado[j] = True
 
-    # Intentar unir los restantes progresivamente
+    # Guardar primer paso del panorama
+    paso = 1
+    cv2.imwrite(os.path.join(carpeta_resultados, f"panorama_paso_{paso}.png"), panorama)
+    paso += 1
+
     for idx in range(n):
         if usado[idx]:
             continue
@@ -79,14 +84,19 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografi
             panorama = crear_panorama(panorama, imagenes[idx], H)
             usado[idx] = True
 
+            # Guardar cada paso intermedio del panorama
+            cv2.imwrite(os.path.join(carpeta_resultados, f"panorama_paso_{paso}.png"), panorama)
+            paso += 1
+
     return panorama
+
 
 # ===== MAIN =====
 if __name__ == "__main__":
-    carpeta = "VPG/S21"
+    carpeta = "VPG/S33"
 
     metodo = "SIFT"  # "SIFT", "ORB", "AKAZE"
-    nfeatures = 2350
+    nfeatures = 2000
 
     imagenes = cargar_imagenes_desde_carpeta(carpeta)
     if len(imagenes) < 2:
