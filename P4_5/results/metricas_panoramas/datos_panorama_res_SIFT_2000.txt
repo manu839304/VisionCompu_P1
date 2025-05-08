@@ -20,10 +20,10 @@ Orden y total de imágenes usadas en el panorama:
   Total: 5
 
 Tiempos por fase:
-  detección: 0.6027 segundos
-  emparejamiento + homografías: 2.0760 segundos
-  cosido: 8.0008 segundos
-  tiempo_total: 10.8492 segundos
+  detección: 0.5489 segundos
+  emparejamiento + homografías: 1.9013 segundos
+  cosido: 8.2245 segundos
+  tiempo_total: 10.8410 segundos
 
 Métricas adicionales:
   Inliers totales: 5832

@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import itertools
 import time
+import argparse
+import warnings
 from auxiliar_func_features import (
     detectar_caracteristicas,
     emparejar_features,
@@ -22,6 +24,10 @@ def cargar_imagenes_desde_carpeta(carpeta):
     return [cv2.imread(ruta) for ruta in imagenes]
 
 def guardar_metricas_panorama(metodo, nfeatures, imagenes, pares_validos, imagenes_usadas, tiempos, tam_panorama, nombre_archivo):
+
+    carpeta_metricas = "results/metricas_panoramas"
+    os.makedirs(carpeta_metricas, exist_ok=True)
+    
     with open(nombre_archivo, 'w', encoding='utf-8') as f:
         f.write(f"Método de detección: {metodo}\n")
         f.write(f"Número de características: {nfeatures}\n")
@@ -60,7 +66,10 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografi
     tiempos = {}
     t_total = time.time()
 
-    carpeta_resultados = "results/imagenes_progresivas"
+    carpeta_resultados_prog = "results/imagenes_progresivas"
+    os.makedirs(carpeta_resultados_prog, exist_ok=True)
+
+    carpeta_resultados = "results/panoramas"
     os.makedirs(carpeta_resultados, exist_ok=True)
 
     n = len(imagenes)
@@ -102,7 +111,7 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografi
     panorama = crear_panorama(imagenes[i], imagenes[j], H)
     usado[i] = usado[j] = True
 
-    cv2.imwrite(os.path.join(carpeta_resultados, "panorama_paso_1.png"), panorama)
+    cv2.imwrite(os.path.join(carpeta_resultados_prog, "panorama_paso_1.png"), panorama)
     paso = 2
 
     t_cosido = time.time()
@@ -121,7 +130,7 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografi
         if es_homografia_valida(H) and len(inliers) > 10:
             panorama = crear_panorama(panorama, imagenes[idx], H)
             usado[idx] = True
-            cv2.imwrite(os.path.join(carpeta_resultados, f"panorama_paso_{paso}.png"), panorama)
+            cv2.imwrite(os.path.join(carpeta_resultados_prog, f"panorama_paso_{paso}.png"), panorama)
             paso += 1
     tiempos["cosido"] = time.time() - t_cosido
 
@@ -129,7 +138,7 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografi
 
     tam_panorama = panorama.shape[:2] if panorama is not None else None
 
-    nombre_archivo = f"results/datos_panorama_res_{metodo}_{nfeatures}.txt"
+    nombre_archivo = f"results/metricas_panoramas/datos_panorama_res_{metodo}_{nfeatures}.txt"
     guardar_metricas_panorama(
         metodo=metodo,
         nfeatures=nfeatures,
@@ -146,18 +155,34 @@ def construir_panorama(imagenes, metodo="SIFT", nfeatures=2000, manual_homografi
 
 # ===== MAIN =====
 if __name__ == "__main__":
-    carpeta = "VPG/S33"
 
-    metodo = "SIFT"  # "SIFT", "ORB", "AKAZE"
-    nfeatures = 2000
+    parser = argparse.ArgumentParser()
+    parser.add_argument("carpeta", help="Carpeta con imágenes (por ejemplo, VPG/S33)")
+    parser.add_argument("--metodo", type=str, default="SIFT", choices=["SIFT", "ORB", "AKAZE"],
+                        help="Método de detección de características")
+    parser.add_argument("--nfeatures", type=int, default=2000,
+                        help="Número de características a detectar (positivo, >0)")
+    args = parser.parse_args()
 
-    imagenes = cargar_imagenes_desde_carpeta(carpeta)
+    if not os.path.exists(args.carpeta):
+        raise FileNotFoundError(f"La carpeta especificada no existe: {args.carpeta}")
+
+    if args.nfeatures <= 0:
+        raise ValueError("El número de características debe ser un entero positivo.")
+
+    imagenes = cargar_imagenes_desde_carpeta(args.carpeta)
+
     if len(imagenes) < 2:
-        print("Se necesitan al menos dos imágenes.")
+        warnings.warn("Se necesitan al menos dos imágenes válidas para construir un panorama.")
         exit()
 
-    panorama_final = construir_panorama(imagenes, metodo, nfeatures)
+    if len(imagenes) > 8:
+        warnings.warn("Hay más de 8 imágenes, esto puede alargar significativamente el tiempo de procesamiento.")
 
-    ruta_salida = f"results/panorama_res_{metodo}_{nfeatures}.png"
+    print(f"Usando método: {args.metodo}, características: {args.nfeatures}, carpeta: {args.carpeta}")
+    panorama_final = construir_panorama(imagenes, metodo=args.metodo, nfeatures=args.nfeatures)
+
+    os.makedirs("results/panoramas", exist_ok=True)
+    ruta_salida = f"results/panoramas/panorama_res_{args.metodo}_{args.nfeatures}.png"
     cv2.imwrite(ruta_salida, panorama_final)
-    print(f"Panorama guardado en {ruta_salida}")
+    print(f"Panorama guardado en: {ruta_salida}")
