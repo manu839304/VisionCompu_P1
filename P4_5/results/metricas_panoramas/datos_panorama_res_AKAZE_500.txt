@@ -1,0 +1,43 @@
+Método de detección: AKAZE
+Número de características: 500
+Número total de imágenes: 7
+Número de pares válidos con homografía: 21
+
+Pares válidos (i, j, número de inliers):
+  (2, 4) - Inliers: 503
+  (1, 2) - Inliers: 458
+  (2, 6) - Inliers: 366
+  (2, 3) - Inliers: 365
+  (1, 6) - Inliers: 306
+  (5, 6) - Inliers: 287
+  (4, 6) - Inliers: 269
+  (1, 4) - Inliers: 268
+  (1, 3) - Inliers: 267
+  (3, 6) - Inliers: 229
+  (3, 5) - Inliers: 204
+  (1, 5) - Inliers: 202
+  (2, 5) - Inliers: 201
+  (3, 4) - Inliers: 193
+  (4, 5) - Inliers: 157
+  (0, 2) - Inliers: 98
+  (0, 1) - Inliers: 96
+  (0, 6) - Inliers: 95
+  (0, 4) - Inliers: 82
+  (0, 3) - Inliers: 67
+  (0, 5) - Inliers: 56
+
+Orden y total de imágenes usadas en el panorama:
+  Índices: [0, 1, 2, 3, 4, 5, 6]
+  Total: 7
+
+Tiempos por fase:
+  detección: 0.9629 segundos
+  emparejamiento + homografías: 2.7755 segundos
+  cosido: 4.3019 segundos
+  tiempo_total: 8.1932 segundos
+
+Métricas adicionales:
+  Inliers totales: 4769
+  Inliers promedio por par: 227.10
+  Tasa de pares válidos: 1.00
+  Tamaño del panorama: 1892 x 2139 px

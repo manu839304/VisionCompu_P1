@@ -1,0 +1,43 @@
+Método de detección: SIFT
+Número de características: 1400
+Número total de imágenes: 7
+Número de pares válidos con homografía: 21
+
+Pares válidos (i, j, número de inliers):
+  (2, 3) - Inliers: 576
+  (2, 4) - Inliers: 551
+  (3, 5) - Inliers: 507
+  (1, 3) - Inliers: 501
+  (1, 2) - Inliers: 499
+  (5, 6) - Inliers: 459
+  (1, 4) - Inliers: 397
+  (0, 1) - Inliers: 394
+  (2, 6) - Inliers: 393
+  (1, 5) - Inliers: 381
+  (2, 5) - Inliers: 379
+  (3, 4) - Inliers: 379
+  (4, 5) - Inliers: 361
+  (4, 6) - Inliers: 358
+  (1, 6) - Inliers: 349
+  (3, 6) - Inliers: 342
+  (0, 4) - Inliers: 270
+  (0, 2) - Inliers: 264
+  (0, 6) - Inliers: 219
+  (0, 3) - Inliers: 217
+  (0, 5) - Inliers: 199
+
+Orden y total de imágenes usadas en el panorama:
+  Índices: [0, 1, 2, 3, 4, 5, 6]
+  Total: 7
+
+Tiempos por fase:
+  detección: 1.6929 segundos
+  emparejamiento + homografías: 7.3667 segundos
+  cosido: 7.3757 segundos
+  tiempo_total: 16.7592 segundos
+
+Métricas adicionales:
+  Inliers totales: 7995
+  Inliers promedio por par: 380.71
+  Tasa de pares válidos: 1.00
+  Tamaño del panorama: 1890 x 2130 px

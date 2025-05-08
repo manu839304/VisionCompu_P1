@@ -1,0 +1,43 @@
+Método de detección: ORB
+Número de características: 5000
+Número total de imágenes: 7
+Número de pares válidos con homografía: 21
+
+Pares válidos (i, j, número de inliers):
+  (2, 4) - Inliers: 1784
+  (1, 2) - Inliers: 1700
+  (2, 3) - Inliers: 1453
+  (1, 3) - Inliers: 1424
+  (5, 6) - Inliers: 1234
+  (3, 5) - Inliers: 1219
+  (2, 6) - Inliers: 1168
+  (1, 4) - Inliers: 1148
+  (1, 6) - Inliers: 1116
+  (1, 5) - Inliers: 1056
+  (2, 5) - Inliers: 1023
+  (4, 6) - Inliers: 1022
+  (3, 6) - Inliers: 1017
+  (3, 4) - Inliers: 952
+  (4, 5) - Inliers: 883
+  (0, 1) - Inliers: 652
+  (0, 4) - Inliers: 561
+  (0, 2) - Inliers: 549
+  (0, 6) - Inliers: 532
+  (0, 3) - Inliers: 516
+  (0, 5) - Inliers: 496
+
+Orden y total de imágenes usadas en el panorama:
+  Índices: [0, 1, 2, 3, 4, 5, 6]
+  Total: 7
+
+Tiempos por fase:
+  detección: 0.8587 segundos
+  emparejamiento + homografías: 9.3210 segundos
+  cosido: 5.6958 segundos
+  tiempo_total: 16.0336 segundos
+
+Métricas adicionales:
+  Inliers totales: 21505
+  Inliers promedio por par: 1024.05
+  Tasa de pares válidos: 1.00
+  Tamaño del panorama: 1903 x 2123 px

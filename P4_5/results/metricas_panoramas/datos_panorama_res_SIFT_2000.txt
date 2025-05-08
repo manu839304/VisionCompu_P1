@@ -1,32 +1,43 @@
 Método de detección: SIFT
 Número de características: 2000
-Número total de imágenes: 5
-Número de pares válidos con homografía: 10
+Número total de imágenes: 7
+Número de pares válidos con homografía: 21
 
 Pares válidos (i, j, número de inliers):
-  (1, 2) - Inliers: 713
-  (2, 3) - Inliers: 684
-  (3, 4) - Inliers: 647
-  (1, 3) - Inliers: 622
-  (2, 4) - Inliers: 604
-  (0, 1) - Inliers: 549
-  (1, 4) - Inliers: 547
-  (0, 2) - Inliers: 494
-  (0, 3) - Inliers: 493
-  (0, 4) - Inliers: 479
+  (2, 3) - Inliers: 792
+  (2, 4) - Inliers: 699
+  (1, 3) - Inliers: 657
+  (1, 2) - Inliers: 645
+  (5, 6) - Inliers: 612
+  (3, 5) - Inliers: 573
+  (2, 6) - Inliers: 566
+  (3, 6) - Inliers: 476
+  (0, 1) - Inliers: 463
+  (4, 6) - Inliers: 461
+  (1, 4) - Inliers: 453
+  (1, 6) - Inliers: 449
+  (2, 5) - Inliers: 444
+  (1, 5) - Inliers: 436
+  (3, 4) - Inliers: 424
+  (4, 5) - Inliers: 360
+  (0, 2) - Inliers: 292
+  (0, 4) - Inliers: 270
+  (0, 6) - Inliers: 265
+  (0, 3) - Inliers: 238
+  (0, 5) - Inliers: 199
 
 Orden y total de imágenes usadas en el panorama:
-  Índices: [0, 1, 2, 3, 4]
-  Total: 5
+  Índices: [0, 1, 2, 3, 4, 5, 6]
+  Total: 7
 
 Tiempos por fase:
-  detección: 0.5489 segundos
-  emparejamiento + homografías: 1.9013 segundos
-  cosido: 8.2245 segundos
-  tiempo_total: 10.8410 segundos
+  detección: 1.3342 segundos
+  emparejamiento + homografías: 4.9517 segundos
+  cosido: 7.6665 segundos
+  tiempo_total: 14.1788 segundos
 
 Métricas adicionales:
-  Inliers totales: 5832
-  Inliers promedio por par: 583.20
+  Inliers totales: 9774
+  Inliers promedio por par: 465.43
   Tasa de pares válidos: 1.00
-  Tamaño del panorama: 2314 x 5559 px
+  Tamaño del panorama: 1900 x 2126 px

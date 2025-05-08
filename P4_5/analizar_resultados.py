@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 import matplotlib.pyplot as plt
 
 def extraer_datos_de_fichero(ruta):
@@ -40,6 +41,8 @@ def cargar_todos_los_resultados(carpeta):
     return resultados
 
 def graficar_metricas(resultados):
+    os.makedirs("results/graficas", exist_ok=True)
+
     metodos = list(set(r["metodo"] for r in resultados))
     colores = {"SIFT": "blue", "ORB": "green", "AKAZE": "red"}
 
@@ -54,13 +57,11 @@ def graficar_metricas(resultados):
         x = [r["nfeatures"] for r in subset]
         tiempos = [r["tiempo_total"] for r in subset]
         inliers = [r["media_inliers"] for r in subset]
-        tasas = [r["tasa_validos"] for r in subset]
         tamanos = [r["tam_panorama"][0] * r["tam_panorama"][1] if r["tam_panorama"] else 0 for r in subset]
 
         axs[0].plot(x, tiempos, label=metodo, marker='o', color=colores.get(metodo, 'gray'))
         axs[1].plot(x, inliers, label=metodo, marker='o', color=colores.get(metodo, 'gray'))
-        axs[2].plot(x, tasas, label=metodo, marker='o', color=colores.get(metodo, 'gray'))
-        axs[3].plot(x, tamanos, label=metodo, marker='o', color=colores.get(metodo, 'gray'))
+        axs[2].plot(x, tamanos, label=metodo, marker='o', color=colores.get(metodo, 'gray'))
 
     axs[0].set_title("Tiempo total vs Nº características")
     axs[0].set_xlabel("Nº características")
@@ -70,23 +71,63 @@ def graficar_metricas(resultados):
     axs[1].set_xlabel("Nº características")
     axs[1].set_ylabel("Inliers promedio")
 
-    axs[2].set_title("Tasa de pares válidos vs Nº características")
+    axs[2].set_title("Tamaño del panorama vs Nº características")
     axs[2].set_xlabel("Nº características")
-    axs[2].set_ylabel("Tasa de pares válidos")
-
-    axs[3].set_title("Tamaño del panorama vs Nº características")
-    axs[3].set_xlabel("Nº características")
-    axs[3].set_ylabel("Área del panorama (px²)")
+    axs[2].set_ylabel("Área del panorama (px²)")
 
     for ax in axs:
         ax.grid(True)
         ax.legend()
 
     plt.tight_layout()
+    ruta_grafica = os.path.join("results/graficas", "metricas_panoramas.png")
+    plt.savefig(ruta_grafica)
+    print(f"Gráficas guardadas en: {ruta_grafica}")
     plt.show()
+
+
+def ejecutar_pipeline_generacion(carpeta_completa="BuildingScene3", metodos=["SIFT", "ORB", "AKAZE"], nfeatures_list=[500, 1000, 2000]):
+    """
+    Ejecuta automáticamente panoramas.py para una carpeta específica dentro de VPG/,
+    variando método de detección y número de características.
+
+    Parámetros:
+        carpeta_completa (str): carpeta con el dataset a usar. ( "BuildingScene3" ,"VPG/*" ...)
+        metodos (list): lista de métodos de detección a probar.
+        nfeatures_list (list): lista de cantidades de características a usar.
+    """
+
+    if not os.path.isdir(carpeta_completa):
+        raise FileNotFoundError(f"La carpeta {carpeta_completa} no existe.")
+
+    print(f"Iniciando pipeline para carpeta: {carpeta_completa}")
+
+    for metodo in metodos:
+        for nfeatures in nfeatures_list:
+            print(f"\nEjecutando: método={metodo}, características={nfeatures}")
+
+            comando = [
+                "python", "panorama.py",
+                carpeta_completa,
+                "--metodo", metodo,
+                "--nfeatures", str(nfeatures)
+            ]
+
+            try:
+                subprocess.run(comando, check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error al ejecutar con método={metodo}, nfeatures={nfeatures}: {e}")
+            else:
+                print(f"Completado: {metodo} con {nfeatures} características")
+
 
 # ===== MAIN =====
 if __name__ == "__main__":
+
+    # Ejecutar el pipeline de generación de panoramas
+    ejecutar_pipeline_generacion(carpeta_completa="BuildingScene3", metodos=["SIFT", "ORB", "AKAZE"], nfeatures_list=[500, 700, 1000, 1200, 1400, 1600, 1800, 2000, 5000, 8000, 10000])
+
+    # Ejecutar el análisis de resultados
     carpeta_resultados = "results/metricas_panoramas"
     resultados = cargar_todos_los_resultados(carpeta_resultados)
     if not resultados:
